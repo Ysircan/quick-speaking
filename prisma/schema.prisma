@@ -1,0 +1,527 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CREATOR
+  PARTICIPANT
+}
+
+enum UnlockMode {
+  DAILY
+  LINEAR
+  FREE
+  AFTER_X_DAYS
+  MANUAL
+  MILESTONE
+}
+
+enum Visibility {
+  PUBLIC
+  PRIVATE
+  UNLISTED
+}
+
+enum DifficultyLevel {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum QuestionType {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  FILL_IN_BLANK
+  SHORT_ANSWER
+  ESSAY
+  AUDIO
+  VIDEO
+}
+
+enum FileType {
+  pdf
+  ppt
+  doc
+  txt
+  image
+  audio
+  zip
+  video
+  other
+}
+
+enum MediaType {
+  image
+  gif
+  video
+  audio
+}
+
+enum UnlockMethod {
+  TASK
+  TRACK
+  DRAW
+  GIFT
+  EVENT
+  MANUAL
+}
+
+enum Rarity {
+  COMMON
+  RARE
+  EPIC
+  LEGENDARY
+  LIMITED
+}
+
+model User {
+  id                String   @id @default(cuid())
+  name              String
+  email             String   @unique
+  password          String
+  role              Role     @default(PARTICIPANT)
+  avatarUrl         String?  @default("https://cdn.quick.com/default-avatar.png")
+  isSystemAccount   Boolean  @default(false)
+  createdAt         DateTime @default(now())
+
+  createdTracks     Track[]             @relation("UserCreatedTracks")
+  enrolledTracks    EnrolledTrack[]
+  taskLogs          TaskLog[]
+  feedbacks         TaskFeedback[]
+  answerLogs        AnswerFeedback[]
+  wrongBooks        WrongBook[]
+  cardsCreated      CardTemplate[]
+  cardInstances     CardInstance[]
+  cardDex           CardDexEntry[]
+  createdCardSets   CardSet[]
+  uploadedFiles     UploadFile[]        @relation("UserUploadedFiles")
+
+  points               Int       @default(0)
+  currentStreakDays    Int       @default(0)
+  lastPointRewardDate  DateTime?
+  dailyOnlineMinutes   Int       @default(0)
+  lastOnlineRewardDate DateTime?
+
+  dailyLogs            DailyLog[]
+  sessionLogs          StudentSessionLog[]
+  pointTransactions    PointTransaction[]
+  achievements         AchievementUnlock[]
+}
+
+model Track {
+  id              String   @id @default(cuid())
+  title           String
+  description     String
+  coverImage      String?
+  createdAt       DateTime @default(now())
+
+  createdById     String
+  createdBy       User     @relation("UserCreatedTracks", fields: [createdById], references: [id])
+
+  isAIgenerated   Boolean    @default(false)
+  isPublished     Boolean    @default(false)
+  visibility      Visibility @default(PUBLIC)
+  durationDays    Int
+  unlockMode      UnlockMode @default(DAILY)
+  unlockParam     Json?
+  dailySchedule   Json?
+  lang            String     @default("en")
+  tags            String[]
+  recommendedFor  String[]
+  customRules     Json?
+
+  isFree          Boolean @default(false)
+  price           Int?
+  originalPrice   Int?
+  currency        String?  @default("AUD")
+  discountNote    String?
+  discountStart   DateTime?
+  discountEnd     DateTime?
+  isPaidPublish   Boolean  @default(false)
+  publishFeeAmount Int?
+  isRefunded      Boolean  @default(false)
+  refundedAt      DateTime?
+
+  parentTrackId    String?
+  parentTrack      Track?     @relation("TrackToDLC", fields: [parentTrackId], references: [id])
+  dlcs             Track[]    @relation("TrackToDLC")
+
+  isRepeatable     Boolean @default(false)
+  isRandomized     Boolean @default(false)
+
+  tasks            Task[]
+  enrollments      EnrolledTrack[]
+  uploadFiles      UploadFile[]
+  trackDropConfigs TrackDropConfig[]
+  taskLogs         TaskLog[]
+  taskFeedbacks    TaskFeedback[]
+  answerFeedbacks  AnswerFeedback[]
+  wrongBooks       WrongBook[]
+}
+
+model Task {
+  id            String   @id @default(cuid())
+  trackId       String
+  track         Track    @relation(fields: [trackId], references: [id])
+
+  dayIndex      Int
+  order         Int
+  type          QuestionType
+  content       String
+  mediaUrl      String?
+  optionsJson   Json?
+  correctAnswer String?
+  explanation   String?
+  tags          String[]
+  difficulty    DifficultyLevel @default(MEDIUM)
+  isAIgenerated Boolean   @default(false)
+  drops         TaskDrop[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  appearanceWeight Int @default(100)
+
+  answerFeedbacks AnswerFeedback[]
+  wrongBooks      WrongBook[]
+}
+
+model UploadFile {
+  id            String   @id @default(cuid())
+  fileName      String
+  fileUrl       String
+  fileType      FileType
+  fileSize      Int?
+  previewImage  String?
+  uploadedAt    DateTime @default(now())
+
+  trackId       String
+  track         Track    @relation(fields: [trackId], references: [id])
+
+  uploadedById  String
+  uploadedBy    User     @relation("UserUploadedFiles", fields: [uploadedById], references: [id])
+
+  isActive      Boolean  @default(true)
+}
+
+model TrackDropConfig {
+  id            String   @id @default(cuid())
+  trackId       String
+  triggerIndex  Int
+  dropOnce      Boolean  @default(true)
+  probability   Float    @default(1.0)
+  startAt       DateTime?
+  endAt         DateTime?
+  description   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  track         Track     @relation(fields: [trackId], references: [id])
+  drops         TrackDrop[]
+}
+
+model TrackDrop {
+  id            String   @id @default(cuid())
+  configId      String
+  cardId        String
+  probability   Float    @default(1.0)
+  quantity      Int      @default(1)
+  description   String?
+  startAt       DateTime?
+  endAt         DateTime?
+
+  config        TrackDropConfig @relation(fields: [configId], references: [id])
+  card          CardTemplate    @relation(fields: [cardId], references: [id])
+}
+
+model TaskDrop {
+  id                   String   @id @default(cuid())
+  taskId               String
+  cardId               String
+  probability          Float    @default(1.0)
+  description          String?
+  requireCorrectAnswer Boolean  @default(false)
+  startAt              DateTime?
+  endAt                DateTime?
+
+  task                 Task         @relation(fields: [taskId], references: [id])
+  card                 CardTemplate @relation(fields: [cardId], references: [id])
+}
+
+model EnrolledTrack {
+  id           String   @id @default(cuid())
+  userId       String
+  trackId      String
+  round        Int      @default(1)
+  enrolledAt   DateTime @default(now())
+  completedAt  DateTime?
+  isActive     Boolean  @default(true)
+  isCompleted  Boolean  @default(false)
+
+  user         User     @relation(fields: [userId], references: [id])
+  track        Track    @relation(fields: [trackId], references: [id])
+}
+
+
+model TaskLog {
+  id             String   @id @default(cuid())
+  userId         String
+  trackId        String
+  round          Int
+  dayIndex       Int
+  completed      Boolean   @default(false)
+  completedAt    DateTime?
+  wasLate        Boolean   @default(false)
+  answer         String?
+  note           String?
+  mediaUrl       String?
+  mood           String?
+  cardDropId     String?
+  cardDropName   String?
+  pointsEarned   Int      @default(0)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user           User     @relation(fields: [userId], references: [id])
+  track          Track    @relation(fields: [trackId], references: [id])
+  cardDrop       CardTemplate? @relation("CardDrop", fields: [cardDropId], references: [id])
+}
+
+model TaskFeedback {
+  id             String   @id @default(cuid())
+  userId         String
+  trackId        String
+  round          Int
+  dayIndex       Int
+  content        String
+  rating         Int?
+  mood           String?
+  isPublic       Boolean   @default(false)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user           User     @relation(fields: [userId], references: [id])
+  track          Track    @relation(fields: [trackId], references: [id])
+}
+
+model AnswerFeedback {
+  id            String   @id @default(cuid())
+  userId        String
+  trackId       String
+  round         Int
+  dayIndex      Int
+  taskId        String
+  answer        String?
+  isCorrect     Boolean?
+  aiUsed        Boolean   @default(false)
+  answeredAt    DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id])
+  track         Track    @relation(fields: [trackId], references: [id])
+  task          Task     @relation(fields: [taskId], references: [id])
+}
+
+model WrongBook {
+  id           String   @id @default(cuid())
+  userId       String
+  trackId      String
+  round        Int
+  dayIndex     Int
+  taskId       String
+  answer       String?
+  reason       String?
+  resolved     Boolean  @default(false)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id])
+  track        Track    @relation(fields: [trackId], references: [id])
+  task         Task     @relation(fields: [taskId], references: [id])
+}
+
+
+model CardTemplate {
+  id                  String   @id @default(cuid())
+  name                String
+  description         String?
+  mediaUrl            String
+  mediaType           MediaType
+  rarity              Rarity   @default(COMMON)
+  theme               String?
+  tags                String[]
+  buffEffect          String?
+  isOfficial          Boolean  @default(false)
+  isTradable          Boolean  @default(false)
+  isHidden            Boolean  @default(false)
+  isAutoDropAllowed   Boolean  @default(true)
+  maxSupply           Int?
+  currentSupply       Int      @default(0)
+  weight              Int      @default(100)
+  sourceType          String?
+  collectionGroup     String?
+  unlockHint          String?
+  unlockDate          DateTime?
+  expireDate          DateTime?
+  displayOrder        Int?
+
+  createdById         String?
+  createdBy           User?     @relation(fields: [createdById], references: [id])
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  instances           CardInstance[]
+  dexEntries          CardDexEntry[]
+  sets                CardSetEntry[] @relation("CardTemplateSet")
+  trackDrops          TrackDrop[]
+  taskDrops           TaskDrop[]
+  cardDropLogs        TaskLog[] @relation("CardDrop")
+}
+
+model CardInstance {
+  id             String   @id @default(cuid())
+  userId         String
+  cardId         String
+  obtainedAt     DateTime @default(now())
+  source         String?
+  note           String?
+  used           Boolean  @default(false)
+  locked         Boolean  @default(false)
+  expiresAt      DateTime?
+  burned         Boolean  @default(false)
+  burnedAt       DateTime?
+  fromUserId     String?
+  isForSale      Boolean  @default(false)
+  price          Int?
+  taskId         String?
+  trackId        String?
+  serialNumber   Int?
+  skinVariant    String?
+  customName     String?
+  tag            String?
+  recycleValue   Int?
+  metadata       Json?
+
+  user           User         @relation(fields: [userId], references: [id])
+  card           CardTemplate @relation(fields: [cardId], references: [id])
+}
+
+model CardDexEntry {
+  id               String   @id @default(cuid())
+  userId           String
+  cardId           String
+  unlockedAt       DateTime @default(now())
+  source           String?
+  unlockMethod     UnlockMethod?
+  unlockTrackId    String?
+  isFavorite       Boolean  @default(false)
+  note             String?
+  isAutoGenerated  Boolean  @default(true)
+  isMilestoneCard  Boolean  @default(false)
+  taskId           String?
+  trackDropId      String?
+  buffActivated    Boolean  @default(false)
+  buffActivatedAt  DateTime?
+
+  user             User         @relation(fields: [userId], references: [id])
+  card             CardTemplate @relation(fields: [cardId], references: [id])
+  cardSets         CardSetEntry[]
+}
+
+model CardSet {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  icon      String?
+  color     String?
+  createdAt DateTime @default(now())
+
+  user      User         @relation(fields: [userId], references: [id])
+  entries   CardSetEntry[]
+}
+
+model CardSetEntry {
+  id           String   @id @default(cuid())
+  setId        String
+  dexEntryId   String
+  cardId       String
+
+  set          CardSet       @relation(fields: [setId], references: [id])
+  dexEntry     CardDexEntry  @relation(fields: [dexEntryId], references: [id])
+  card         CardTemplate  @relation("CardTemplateSet", fields: [cardId], references: [id])
+
+  @@unique([setId, dexEntryId, cardId])
+  @@index([setId])
+  @@index([dexEntryId])
+  @@index([cardId])
+}
+
+
+
+model DailyLog {
+  id             String   @id @default(cuid())
+  userId         String
+  date           DateTime
+  checkedIn      Boolean   @default(false)
+  pointsEarned   Int       @default(0)
+  cardsEarned    Int       @default(0)
+  taskCompleted  Int       @default(0)
+  minutesOnline  Int       @default(0)
+
+  user           User      @relation(fields: [userId], references: [id])
+
+  @@unique([userId, date])
+  @@index([userId])
+}
+
+model StudentSessionLog {
+  id         String   @id @default(cuid())
+  userId     String
+  startedAt  DateTime
+  endedAt    DateTime?
+  page       String
+
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model PointTransaction {
+  id          String   @id @default(cuid())
+  userId      String
+  amount      Int
+  type        String
+  description String?
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model AchievementUnlock {
+  id           String   @id @default(cuid())
+  userId       String
+  code         String
+  unlockedAt   DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, code])
+  @@index([userId])
+}
