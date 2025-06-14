@@ -40,11 +40,12 @@ export default function CreateTrackForm() {
 
     const data = await res.json()
 
-    if (data.success) {
-      router.push(`/track/${data.track.id}/edit`)
-    } else {
-      alert("创建失败：" + data.error)
-    }
+   if (data.success) {
+  router.push(`/creator/dashboard/track/${data.track.id}/edit`)
+} else {
+  alert("创建失败：" + data.error)
+}
+
 
     setLoading(false)
   }

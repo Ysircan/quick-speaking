@@ -48,6 +48,7 @@ enum QuestionType {
   ESSAY
   AUDIO
   VIDEO
+  CHECKIN 
 }
 
 enum FileType {
@@ -85,6 +86,16 @@ enum Rarity {
   LEGENDARY
   LIMITED
 }
+
+enum GoalType {
+  STUDY       // 学习型任务（AI 出题推荐）
+  EXERCISE    // 练习型（做题为主）
+  READING     // 阅读型（上传资料推荐）
+  CHECKIN     // 打卡类（轻任务 / 提交图文）
+  TEST        // 测试（严格限制解锁）
+  CUSTOM      // 自定义
+}
+
 
 model User {
   id                String   @id @default(cuid())
@@ -169,6 +180,8 @@ model Track {
   taskFeedbacks    TaskFeedback[]
   answerFeedbacks  AnswerFeedback[]
   wrongBooks       WrongBook[]
+  dayMetas TrackDayMeta[]
+
 }
 
 model Task {
@@ -524,4 +537,19 @@ model AchievementUnlock {
 
   @@unique([userId, code])
   @@index([userId])
+}
+model TrackDayMeta {
+  id          String       @id @default(cuid())
+  trackId     String
+  track       Track        @relation(fields: [trackId], references: [id])
+
+  dayIndex    Int          // 第几天，从 1 开始
+  goalType    GoalType     // 每日任务目的（枚举）
+  unlockMode  UnlockMode   // 每日解锁方式（枚举）
+  unlockParam Json?        // 条件解锁的参数，如前置任务/天数
+  note        String?      // 老师备注，可选
+
+  createdAt   DateTime     @default(now())
+
+  @@unique([trackId, dayIndex])  // 每个 Track 的某一天只能有一条配置
 }
