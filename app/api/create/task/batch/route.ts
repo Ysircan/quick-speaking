@@ -14,20 +14,37 @@ export async function POST(req: Request) {
       )
     }
 
-    const formattedTasks = tasks.map((task: any) => ({
+    // 中文 → Prisma 枚举映射
+    const typeMap: Record<string, QuestionType> = {
+      "选择题": QuestionType.SINGLE_CHOICE,
+      "多选题": QuestionType.MULTIPLE_CHOICE,
+      "填空题": QuestionType.FILL_IN_BLANK,
+      "简答题": QuestionType.SHORT_ANSWER,
+      "打卡题": QuestionType.CHECKIN,
+      "音频题": QuestionType.AUDIO,
+      "视频题": QuestionType.VIDEO,
+    }
+
+    const difficultyMap: Record<string, DifficultyLevel> = {
+      "简单": DifficultyLevel.EASY,
+      "中等": DifficultyLevel.MEDIUM,
+      "困难": DifficultyLevel.HARD,
+    }
+
+    const formattedTasks = tasks.map((task: any, index: number) => ({
       trackId: trackId,
       dayIndex: Number(task.dayIndex ?? 1),
-      order: Number(task.order ?? 1), // 确保每个任务有顺序
-      type: task.type as QuestionType ?? QuestionType.CHECKIN,
+      order: Number(task.order ?? index + 1), // 保底顺序
+      type: typeMap[task.type] ?? QuestionType.CHECKIN,
       content: typeof task.content === "string" ? task.content : "",
-      mediaUrl: task.mediaUrl ?? null,
+      mediaUrl: typeof task.mediaUrl === "string" ? task.mediaUrl : null,
       optionsJson: task.optionsJson ?? null,
       correctAnswer: task.correctAnswer ?? null,
       explanation: task.explanation ?? null,
       tags: Array.isArray(task.tags) ? task.tags : [],
-      difficulty: task.difficulty as DifficultyLevel ?? DifficultyLevel.MEDIUM,
+      difficulty: difficultyMap[task.difficulty] ?? DifficultyLevel.MEDIUM,
       isAIgenerated: !!task.isAIgenerated,
-      appearanceWeight: task.appearanceWeight ?? 100,
+      appearanceWeight: typeof task.appearanceWeight === "number" ? task.appearanceWeight : 100,
     }))
 
     const created = await prisma.task.createMany({

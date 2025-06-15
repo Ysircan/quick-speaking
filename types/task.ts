@@ -1,20 +1,29 @@
+// types/track.ts
+
 export interface TaskItem {
-  id?: string             // 保存后数据库生成的 ID（本地未保存时可为空）
-  dayIndex: number        // 属于第几天
-  type: string            // 题型，如 choice, cloze, short 等
-  content?: string        // 题干预览（AI 生成/手动填写）
-  options?: string[]      // 如果是选择题
-  answer?: string         // 正确答案
+  id?: string
+  trackId: string
+  dayIndex: number
+  order?: number
+  type: string                // SINGLE_CHOICE, MULTIPLE_CHOICE, FILL_IN_BLANK, etc.
+  content: string             // 问题文本
+  optionsJson?: string[]      // 选项（如有）
+  correctAnswer?: string      // 正确答案（如有）
+  explanation?: string        // 解析（可选）
+  tags?: string[]             // 标签
+  difficulty?: string         // EASY, MEDIUM, HARD
+  isAIgenerated?: boolean     // 是否由 AI 生成
+  appearanceWeight?: number   // 在题组中出现的权重
 }
-// 如果没有，加上👇
+
 export interface TrackData {
   id: string
   title: string
   description: string
   durationDays: number
-  unlockMode: string
+  unlockMode: string           // DAILY, LINEAR, FREE, etc.
   tags: string[]
-  recommendedFor: string[]
+  recommendedFor: string[]     // 推荐人群（如：初学者、考生等）
   isFree: boolean
   isPublished: boolean
   tasks: TaskItem[]

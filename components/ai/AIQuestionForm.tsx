@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { TaskItem } from "@/types/task" // ✅ 路径视你实际位置可能是 ../../types/task
+import { TaskItem } from "@/types/task"
 
 interface AIQuestionFormProps {
   trackId: string
@@ -19,62 +19,61 @@ export default function AIQuestionForm({
   const [count, setCount] = useState(3)
   const [loading, setLoading] = useState(false)
 
-const handleGenerate = async () => {
-  if (!topic.trim()) {
-    alert("请输入关键词")
-    return
-  }
-
-  if (count <= 0 || count > 10) {
-    alert("题目数量需在 1~10 之间")
-    return
-  }
-
-  setLoading(true)
-  try {
-    const res = await fetch("/api/ai/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        topic: topic.trim(),
-        structure: [
-          {
-            type,
-            count,
-          },
-        ],
-      }),
-    })
-
-    const data = await res.json()
-console.log("[AI生成返回结果]", data)  // 👈 就是加这一行
-if (data.success && Array.isArray(data.questions)) {
-  const questions: TaskItem[] = data.questions.map((q: any, i: number) => ({
-    id: `${Date.now()}-${i}`,
-    trackId,
-    dayIndex,
-    isAIgenerated: true,
-    type,                           // 👈 当前选择的题型
-    content: q.question,            // 👈 这一步最关键 ✅
-    options: q.options ?? [],
-    answer: q.answer ?? "",
-  }))
-  onGenerated(questions)
-}
- else {
-      console.warn("生成返回格式异常", data.error)
+  const handleGenerate = async () => {
+    if (!topic.trim()) {
+      alert("请输入关键词")
+      return
     }
-  } catch (err) {
-    console.error("生成题目失败", err)
-  } finally {
-    setLoading(false)
-  }
-  
-}
+    if (count <= 0 || count > 10) {
+      alert("题目数量需在 1~10 之间")
+      return
+    }
 
+    setLoading(true)
+    try {
+      const res = await fetch("/api/ai/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topic: topic.trim(),
+          structure: [
+            {
+              type,
+              count,
+            },
+          ],
+        }),
+      })
+
+      const data = await res.json()
+      console.log("[✅ AI返回数据]", data)
+
+      if (data.success && Array.isArray(data.questions)) {
+        const questions: TaskItem[] = data.questions.map((q: any, i: number) => ({
+          id: `${Date.now()}-${i}`,
+          trackId,
+          dayIndex,
+          order: i + 1,
+          type,                              // 中文题型，如 “选择题”
+          content: q.question ?? "",         // ✅ 题干
+          optionsJson: q.options ?? [],      // ✅ 选项数组
+          correctAnswer: q.answer ?? "",     // ✅ 正确答案
+          isAIgenerated: true,
+          appearanceWeight: 100,
+        }))
+        onGenerated(questions)
+      } else {
+        console.warn("[⚠️ 生成失败]", data.error)
+      }
+    } catch (err) {
+      console.error("[❌ AI请求异常]", err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
-    <div className="space-y-4 p-4 bg-neutral-900 rounded-xl">
+    <div className="space-y-4 p-4 bg-neutral-900 rounded-xl border border-neutral-700">
       <div>
         <label className="text-sm block mb-1">输入关键词</label>
         <input
@@ -115,11 +114,11 @@ if (data.success && Array.isArray(data.questions)) {
 
       <button
         onClick={handleGenerate}
-        disabled={loading || !topic}
-        className="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded text-white mt-2"
+        disabled={loading}
+        className="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded text-white mt-2 w-full"
       >
         {loading ? "生成中..." : "生成题目"}
       </button>
     </div>
   )
-}
+}   

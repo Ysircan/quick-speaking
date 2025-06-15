@@ -1,27 +1,8 @@
-"use client"
+'use client'
 
 import { useEffect, useRef, useState } from "react"
 import { useParams } from "next/navigation"
-
-interface TaskItem {
-  id: string
-  dayIndex: number
-  type: string
-  content?: string
-}
-
-interface TrackData {
-  id: string
-  title: string
-  description: string
-  durationDays: number
-  unlockMode: string
-  tags: string[]
-  recommendedFor: string[]
-  isFree: boolean
-  isPublished: boolean
-  tasks: TaskItem[]
-}
+import type { TrackData } from "@/types/task"
 
 interface EditTrackPanelProps {
   onTrackLoaded?: (track: TrackData) => void
@@ -36,11 +17,7 @@ export default function EditTrackPanel({
 }: EditTrackPanelProps) {
   const { id: trackId } = useParams()
   const [internalActiveDay, setInternalActiveDay] = useState(1)
-  const [fetched, setFetched] = useState(false)
-
-  const activeDay = externalActiveDay ?? internalActiveDay
   const setActiveDay = onDayChange ?? setInternalActiveDay
-
   const calledRef = useRef(false)
 
   useEffect(() => {
@@ -48,20 +25,16 @@ export default function EditTrackPanel({
       try {
         const res = await fetch(`/api/create/track/${trackId}`)
         const data = await res.json()
-
-        // 只调用一次 onTrackLoaded（避免父组件反复渲染）
-        if (!calledRef.current) {
+        if (data?.track && !calledRef.current) {
           onTrackLoaded?.(data.track)
           calledRef.current = true
         }
-
-        setFetched(true)
       } catch (err) {
         console.error("❌ 加载训练营失败：", err)
       }
     }
 
-    fetchTrack()
+    if (trackId) fetchTrack()
   }, [trackId, onTrackLoaded])
 
   return null
