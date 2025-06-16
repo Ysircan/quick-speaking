@@ -15,6 +15,15 @@ export async function POST(req: Request) {
       )
     }
 
+    // ✅ 严格检查每个 task 是否包含 dayIndex
+    const hasMissingDay = tasks.some((task: any) => typeof task.dayIndex !== "number")
+    if (hasMissingDay) {
+      return NextResponse.json(
+        { success: false, error: "每个任务必须明确包含 dayIndex" },
+        { status: 400 }
+      )
+    }
+
     const typeMap: Record<string, QuestionType> = {
       "选择题": QuestionType.SINGLE_CHOICE,
       "多选题": QuestionType.MULTIPLE_CHOICE,
@@ -33,7 +42,7 @@ export async function POST(req: Request) {
 
     const formattedTasks = tasks.map((task: any, index: number) => ({
       trackId: trackId,
-      dayIndex: Number(task.dayIndex ?? 1),
+      dayIndex: Number(task.dayIndex),  // ✅ 不再默认 fallback，必须传
       order: Number(task.order ?? index + 1),
       type: typeMap[task.type] ?? QuestionType.CHECKIN,
       content: typeof task.content === "string" ? task.content : "",
