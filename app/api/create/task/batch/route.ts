@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { QuestionType, DifficultyLevel } from "@prisma/client"
 
+// ✅ [1] POST 方法：保存题目（你原本已有）
 export async function POST(req: Request) {
   try {
     const body = await req.json()
@@ -14,7 +15,6 @@ export async function POST(req: Request) {
       )
     }
 
-    // 中文 → Prisma 枚举映射
     const typeMap: Record<string, QuestionType> = {
       "选择题": QuestionType.SINGLE_CHOICE,
       "多选题": QuestionType.MULTIPLE_CHOICE,
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     const formattedTasks = tasks.map((task: any, index: number) => ({
       trackId: trackId,
       dayIndex: Number(task.dayIndex ?? 1),
-      order: Number(task.order ?? index + 1), // 保底顺序
+      order: Number(task.order ?? index + 1),
       type: typeMap[task.type] ?? QuestionType.CHECKIN,
       content: typeof task.content === "string" ? task.content : "",
       mediaUrl: typeof task.mediaUrl === "string" ? task.mediaUrl : null,
@@ -63,4 +63,25 @@ export async function POST(req: Request) {
       { status: 500 }
     )
   }
+}
+
+// ✅ [2] GET 方法：读取题目（你现在要添加的部分）
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const trackId = searchParams.get("trackId")
+  const dayIndex = Number(searchParams.get("dayIndex"))
+
+  if (!trackId) {
+    return NextResponse.json({ error: "缺少 trackId" }, { status: 400 })
+  }
+
+  const tasks = await prisma.task.findMany({
+    where: {
+      trackId,
+      ...(isNaN(dayIndex) ? {} : { dayIndex }),
+    },
+    orderBy: { order: "asc" },
+  })
+
+  return NextResponse.json(tasks)
 }

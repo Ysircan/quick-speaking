@@ -1,41 +1,67 @@
 'use client'
 
-import { useEffect, useRef, useState } from "react"
-import { useParams } from "next/navigation"
-import type { TrackData } from "@/types/task"
+import { useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
+import DayTabs from './DayTabs'
+import TaskDayMetaPanel from './TaskDayMetaPanel'
 
-interface EditTrackPanelProps {
-  onTrackLoaded?: (track: TrackData) => void
-  activeDay?: number
-  onDayChange?: (day: number) => void
+interface Track {
+  id: string
+  title: string
+  durationDays: number
 }
 
-export default function EditTrackPanel({
-  onTrackLoaded,
-  activeDay: externalActiveDay,
-  onDayChange,
-}: EditTrackPanelProps) {
+interface DayMeta {
+  dayIndex: number
+  goalType: string
+}
+
+export default function EditTrackPanel() {
   const { id: trackId } = useParams()
-  const [internalActiveDay, setInternalActiveDay] = useState(1)
-  const setActiveDay = onDayChange ?? setInternalActiveDay
-  const calledRef = useRef(false)
+  const [track, setTrack] = useState<Track | null>(null)
+  const [dayMetas, setDayMetas] = useState<DayMeta[]>([])
+  const [activeDay, setActiveDay] = useState(1)
 
   useEffect(() => {
-    const fetchTrack = async () => {
-      try {
-        const res = await fetch(`/api/create/track/${trackId}`)
-        const data = await res.json()
-        if (data?.track && !calledRef.current) {
-          onTrackLoaded?.(data.track)
-          calledRef.current = true
+    if (!trackId) return
+
+    fetch(`/api/create/track/${trackId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setTrack(data.track)
+        if (data.dayMetas) {
+          setDayMetas(data.dayMetas)
         }
-      } catch (err) {
-        console.error("❌ 加载训练营失败：", err)
-      }
-    }
+      })
+      .catch((err) => console.error('加载失败', err))
+  }, [trackId])
 
-    if (trackId) fetchTrack()
-  }, [trackId, onTrackLoaded])
+  const handleMetaSaved = (dayIndex: number, goalType: string) => {
+    setDayMetas((prev) => {
+      const others = prev.filter((d) => d.dayIndex !== dayIndex)
+      return [...others, { dayIndex, goalType }]
+    })
+  }
 
-  return null
+  if (!track) return <div className="text-white">加载中...</div>
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold text-white">编辑训练营：{track.title}</h1>
+
+      {/* 顶部 Tabs：第 1 天 ~ 第 N 天 */}
+      <DayTabs
+        totalDays={track.durationDays}
+        activeDay={activeDay}
+        onDayChange={(day) => setActiveDay(day)}
+        dayMetas={dayMetas}
+      />
+
+      {/* 任务节奏设置区 */}
+      <TaskDayMetaPanel
+        dayIndex={activeDay}
+        onMetaSaved={handleMetaSaved}
+      />
+    </div>
+  )
 }

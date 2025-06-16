@@ -1,11 +1,9 @@
-// app/api/create/track/[id]/route.ts
-
 import { prisma } from "@/lib/prisma"
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 
-// GET：获取某个训练营信息
+// ✅ GET：获取某个训练营信息 + 每日任务节奏
 export async function GET(
-  req: Request,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const trackId = params.id
@@ -19,9 +17,12 @@ export async function GET(
             id: true,
             dayIndex: true,
             type: true,
+            order: true,
+            createdAt: true,
           },
-          orderBy: [{ dayIndex: "asc" }, { createdAt: "asc" }],
+          orderBy: [{ dayIndex: "asc" }, { order: "asc" }],
         },
+        dayMetas: true, // ✅ 加入每日节奏信息
       },
     })
 
@@ -42,39 +43,13 @@ export async function GET(
         isPublished: track.isPublished,
         tasks: track.tasks,
       },
+      dayMetas: track.dayMetas.map((d) => ({
+        dayIndex: d.dayIndex,
+        goalType: d.goalType,
+      })),
     })
   } catch (error) {
     console.error("获取训练营失败：", error)
-    return NextResponse.json({ error: "服务器错误" }, { status: 500 })
-  }
-}
-
-// PUT：更新训练营信息
-export async function PUT(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
-  const trackId = params.id
-  const body = await req.json()
-
-  try {
-    const updated = await prisma.track.update({
-      where: { id: trackId },
-      data: {
-        title: body.title,
-        description: body.description,
-        durationDays: body.durationDays,
-        unlockMode: body.unlockMode,
-        tags: body.tags,
-        recommendedFor: body.recommendedFor,
-        isFree: body.isFree,
-        isPublished: body.isPublished,
-      },
-    })
-
-    return NextResponse.json({ success: true, track: updated })
-  } catch (error) {
-    console.error("更新训练营失败：", error)
     return NextResponse.json({ error: "服务器错误" }, { status: 500 })
   }
 }

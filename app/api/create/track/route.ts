@@ -1,10 +1,10 @@
-// app/api/create/track/route.ts
+// app/api/create/track/daymeta/route.ts
 
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import getCurrentUserFromRequest from "@/lib/getCurrentUser"
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const user = await getCurrentUserFromRequest(req)
   if (!user) {
     return NextResponse.json({ error: "未授权" }, { status: 401 })
@@ -12,51 +12,55 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json()
-    const {
-      title,
-      description,
-      coverImage,
-      durationDays,
-      unlockMode,
-      lang,
-      tags,
-      recommendedFor,
-      isAIgenerated,
-      customRules,
-      isFree,
-      isPublished,
-    } = body
+    const { trackId, dayIndex, goalType, unlockMode, note } = body
 
-    const track = await prisma.track.create({
-      data: {
-        title,
-        description,
-        coverImage,
-        durationDays,
-        unlockMode,
-        lang,
-        tags,
-        recommendedFor,
-        isAIgenerated,
-        customRules,
-        isFree,
-        isPublished,
-        createdById: user.id,
+    if (!trackId || !dayIndex || !goalType || !unlockMode) {
+      return NextResponse.json({ error: "缺少必要字段" }, { status: 400 })
+    }
+
+    // 判断是否存在记录（唯一索引）
+    const existing = await prisma.trackDayMeta.findUnique({
+      where: {
+        trackId_dayIndex: {
+          trackId,
+          dayIndex,
+        },
       },
     })
 
-    return NextResponse.json({
-      success: true,
-      track: {
-        id: track.id,
-        title: track.title,
-        isPublished: track.isPublished,
-        durationDays: track.durationDays,
-        createdAt: track.createdAt,
-      },
-    })
+    let savedMeta
+
+    if (existing) {
+      // 更新
+      savedMeta = await prisma.trackDayMeta.update({
+        where: {
+          trackId_dayIndex: {
+            trackId,
+            dayIndex,
+          },
+        },
+        data: {
+          goalType,
+          unlockMode,
+          note,
+        },
+      })
+    } else {
+      // 新建
+      savedMeta = await prisma.trackDayMeta.create({
+        data: {
+          trackId,
+          dayIndex,
+          goalType,
+          unlockMode,
+          note,
+        },
+      })
+    }
+
+    return NextResponse.json({ success: true, meta: savedMeta })
   } catch (error) {
-    console.error("创建训练营失败：", error)
-    return NextResponse.json({ success: false, error: "创建失败" }, { status: 500 })
+    console.error("保存 dayMeta 失败：", error)
+    return NextResponse.json({ error: "服务器错误" }, { status: 500 })
   }
 }
