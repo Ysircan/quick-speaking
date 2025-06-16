@@ -25,13 +25,17 @@ const unlockModeOptions = [
   { value: 'MILESTONE', label: '达成条件后解锁' },
 ]
 
-export default function TaskDayMetaPanel({ dayIndex, onMetaSaved }: TaskDayMetaPanelProps) {
+export default function TaskDayMetaPanel({
+  dayIndex,
+  onMetaSaved,
+}: TaskDayMetaPanelProps) {
   const { id: trackId } = useParams()
   const [goalType, setGoalType] = useState('STUDY')
   const [unlockMode, setUnlockMode] = useState('DAILY')
   const [note, setNote] = useState('')
   const [loading, setLoading] = useState(false)
 
+  // 保存配置：写入数据库
   const handleSave = async () => {
     if (!trackId) return
     setLoading(true)
@@ -51,82 +55,87 @@ export default function TaskDayMetaPanel({ dayIndex, onMetaSaved }: TaskDayMetaP
 
       const data = await res.json()
       if (data.success) {
-        onMetaSaved(dayIndex, goalType) // ✅ 通知父组件刷新
+        onMetaSaved(dayIndex, goalType)
       }
     } catch (err) {
-      console.error('保存失败', err)
+      console.error('保存失败:', err)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="bg-gray-900 text-white p-4 rounded-xl space-y-4 border border-gray-700">
+    <div className="bg-gray-900 text-white p-4 rounded-xl border border-gray-700 space-y-4">
       <h2 className="text-xl font-semibold">📌 第 {dayIndex} 天任务配置</h2>
 
       {/* 任务类型 */}
-      <div>
+      <section>
         <label className="block mb-1 text-sm text-gray-400">任务类型</label>
         <div className="flex flex-wrap gap-2">
           {goalTypeOptions.map((opt) => (
             <button
               key={opt.value}
               type="button"
-              className={`px-3 py-1 rounded-full text-sm border ${
+              onClick={() => {
+                setGoalType(opt.value)
+                onMetaSaved(dayIndex, opt.value) // ✅ 实时通知父组件更新面板
+              }}
+              className={`px-3 py-1 rounded-full text-sm border transition-all ${
                 goalType === opt.value
                   ? 'bg-purple-600 text-white border-purple-400'
                   : 'bg-gray-800 text-gray-300 border-gray-600'
               }`}
-              onClick={() => setGoalType(opt.value)}
             >
               {opt.label}
             </button>
           ))}
         </div>
-      </div>
+      </section>
 
       {/* 解锁模式 */}
-      <div>
+      <section>
         <label className="block mb-1 text-sm text-gray-400">解锁模式</label>
         <div className="flex flex-wrap gap-2">
           {unlockModeOptions.map((opt) => (
             <button
               key={opt.value}
               type="button"
-              className={`px-3 py-1 rounded-full text-sm border ${
+              onClick={() => setUnlockMode(opt.value)}
+              className={`px-3 py-1 rounded-full text-sm border transition-all ${
                 unlockMode === opt.value
                   ? 'bg-green-600 text-white border-green-400'
                   : 'bg-gray-800 text-gray-300 border-gray-600'
               }`}
-              onClick={() => setUnlockMode(opt.value)}
             >
               {opt.label}
             </button>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* 备注 */}
-      <div>
+      {/* 备注说明 */}
+      <section>
         <label className="block mb-1 text-sm text-gray-400">备注</label>
         <input
           type="text"
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          className="w-full px-3 py-2 rounded bg-gray-800 border border-gray-600 text-white"
           placeholder="选填，对本日任务的补充说明"
+          className="w-full px-3 py-2 rounded bg-gray-800 border border-gray-600 text-white"
         />
-      </div>
+      </section>
 
       {/* 保存按钮 */}
-      <button
-        type="button"
-        onClick={handleSave}
-        disabled={loading}
-        className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded text-white"
-      >
-        {loading ? '保存中...' : '💾 保存任务配置'}
-      </button>
+      <div>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={loading}
+          className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded text-white"
+        >
+          {loading ? '保存中...' : '💾 保存任务配置'}
+        </button>
+      </div>
     </div>
   )
 }
