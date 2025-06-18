@@ -9,7 +9,7 @@ export default function NewTrackPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-400">
-        加载中...
+        Loading...
       </div>
     )
   }
@@ -17,14 +17,14 @@ export default function NewTrackPage() {
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center text-red-500">
-        未授权访问，请先登录。
+        Unauthorized access. Please log in first.
       </div>
     )
   }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-10 text-white">
-      <h1 className="text-2xl font-bold mb-6">🎯 创建新的训练营</h1>
+      <h1 className="text-2xl font-bold mb-6">🎯 Create a New Bootcamp</h1>
       <CreateTrackForm />
     </div>
   )

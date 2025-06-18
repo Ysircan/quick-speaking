@@ -2,7 +2,7 @@ interface DayTabsProps {
   totalDays: number
   activeDay: number
   onDayChange: (day: number) => void
-  dayMetas: { dayIndex: number; goalType: string }[]  // ✅ 新增
+  dayMetas: { dayIndex: number; goalType: string }[]  // ✅ Daily goal type per day
 }
 
 export default function DayTabs({
@@ -15,12 +15,12 @@ export default function DayTabs({
     const meta = dayMetas.find((m) => m.dayIndex === day)
     if (!meta) return ''
     const labelMap: Record<string, string> = {
-      STUDY: '学习',
-      EXERCISE: '练习',
-      READING: '阅读',
-      CHECKIN: '打卡',
-      TEST: '测试',
-      CUSTOM: '自定义',
+      STUDY: 'Study',
+      EXERCISE: 'Exercise',
+      READING: 'Reading',
+      CHECKIN: 'Check-in',
+      TEST: 'Test',
+      CUSTOM: 'Custom',
     }
     return labelMap[meta.goalType] || ''
   }
@@ -40,7 +40,7 @@ export default function DayTabs({
             }`}
             onClick={() => onDayChange(day)}
           >
-            <div>第 {day} 天</div>
+            <div>Day {day}</div>
             {label && <div className="text-xs text-gray-300">{label}</div>}
           </button>
         )

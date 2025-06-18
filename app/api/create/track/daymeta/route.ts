@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
-// 允许的枚举值
+// Allowed enums
 const ALLOWED_GOAL_TYPES = ["STUDY", "EXERCISE", "READING", "CHECKIN", "TEST", "CUSTOM"]
 const ALLOWED_UNLOCK_MODES = ["DAILY", "LINEAR", "FREE", "AFTER_X_DAYS", "MANUAL", "MILESTONE"]
 
+// ✅ GET: Fetch a day's configuration by trackId and dayIndex
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
@@ -12,7 +13,7 @@ export async function GET(req: NextRequest) {
     const dayIndex = Number(searchParams.get("dayIndex"))
 
     if (!trackId || isNaN(dayIndex)) {
-      return NextResponse.json({ error: "参数缺失或错误" }, { status: 400 })
+      return NextResponse.json({ error: "Missing or invalid parameters." }, { status: 400 })
     }
 
     const meta = await prisma.trackDayMeta.findUnique({
@@ -23,11 +24,12 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ meta })
   } catch (error) {
-    console.error("❌ GET /track-day-meta 错误:", error)
-    return NextResponse.json({ error: "服务器错误" }, { status: 500 })
+    console.error("❌ Error in GET /track-day-meta:", error)
+    return NextResponse.json({ error: "Internal server error." }, { status: 500 })
   }
 }
 
+// ✅ POST: Create or update day configuration
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -37,16 +39,15 @@ export async function POST(req: NextRequest) {
       goalType,
       unlockMode,
       unlockParam = null,
-      note = ""
+      note = "",
     } = body
 
     const dayIndexNum = Number(dayIndex)
 
     if (!trackId || isNaN(dayIndexNum)) {
-      return NextResponse.json({ error: "参数不完整" }, { status: 400 })
+      return NextResponse.json({ error: "Incomplete parameters." }, { status: 400 })
     }
 
-    // ✅ 合法性检查：不合法就用默认值
     const safeGoalType = ALLOWED_GOAL_TYPES.includes(goalType) ? goalType : "STUDY"
     const safeUnlockMode = ALLOWED_UNLOCK_MODES.includes(unlockMode) ? unlockMode : "DAILY"
 
@@ -72,7 +73,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, meta: saved })
   } catch (error) {
-    console.error("❌ POST /track-day-meta 错误:", error)
-    return NextResponse.json({ error: "服务器错误" }, { status: 500 })
+    console.error("❌ Error in POST /track-day-meta:", error)
+    return NextResponse.json({ error: "Internal server error." }, { status: 500 })
   }
 }

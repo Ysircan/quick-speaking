@@ -1,4 +1,3 @@
-// components/auth/LogoutButton.tsx
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -20,7 +19,7 @@ export default function LogoutButton() {
       onClick={handleLogout}
       className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
     >
-      退出登录
+      Log Out
     </button>
   );
 }

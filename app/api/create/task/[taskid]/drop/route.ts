@@ -1,27 +1,61 @@
-// POST: 配置当前题目的掉落内容
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { NextRequest, NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
+import getCurrentUserFromRequest from "@/lib/getCurrentUser"
 
 export async function POST(
   req: NextRequest,
-  context: { params: { taskId: string } }
+  { params }: { params: { taskId: string } }
 ) {
-  const { taskId } = context.params
-  const body = await req.json()
-  const { cardId, probability, requireCorrectAnswer } = body
+  const user = await getCurrentUserFromRequest(req)
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const { taskId } = params
 
   try {
-    await prisma.taskDrop.create({
-      data: {
+    const body = await req.json()
+    const {
+      cardId,
+      probability = 1.0,
+      requireCorrectAnswer = false,
+      description,
+      startAt,
+      endAt,
+    } = body
+
+    if (!cardId || isNaN(probability) || probability < 0 || probability > 1) {
+      return NextResponse.json({ error: "Invalid input" }, { status: 400 })
+    }
+
+    const drop = await prisma.taskDrop.upsert({
+      where: {
+        taskId_cardId: {
+          taskId,
+          cardId,
+        },
+      },
+      update: {
+        probability,
+        requireCorrectAnswer,
+        description,
+        startAt: startAt ? new Date(startAt) : undefined,
+        endAt: endAt ? new Date(endAt) : undefined,
+      },
+      create: {
         taskId,
         cardId,
-        probability: parseFloat(probability),
+        probability,
         requireCorrectAnswer,
+        description,
+        startAt: startAt ? new Date(startAt) : undefined,
+        endAt: endAt ? new Date(endAt) : undefined,
       },
     })
-    return NextResponse.json({ success: true })
-  } catch (err) {
-    console.error('[DROP CONFIG ERROR]', err)
-    return NextResponse.json({ success: false, error: '掉落配置失败' }, { status: 500 })
+
+    return NextResponse.json({ success: true, drop })
+  } catch (error) {
+    console.error("❌ Failed to save TaskDrop:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

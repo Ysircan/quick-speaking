@@ -9,20 +9,20 @@ interface TaskDayMetaPanelProps {
 }
 
 const goalTypeOptions = [
-  { value: 'STUDY', label: '学习任务' },
-  { value: 'EXERCISE', label: '练习任务' },
-  { value: 'READING', label: '阅读任务' },
-  { value: 'CHECKIN', label: '打卡任务' },
-  { value: 'TEST', label: '测试任务' },
-  { value: 'CUSTOM', label: '自定义' },
+  { value: 'STUDY', label: 'Study Task' },
+  { value: 'EXERCISE', label: 'Exercise Task' },
+  { value: 'READING', label: 'Reading Task' },
+  { value: 'CHECKIN', label: 'Check-in Task' },
+  { value: 'TEST', label: 'Test Task' },
+  { value: 'CUSTOM', label: 'Custom' },
 ]
 
 const unlockModeOptions = [
-  { value: 'DAILY', label: '每日解锁' },
-  { value: 'LINEAR', label: '完成前一题后解锁' },
-  { value: 'MANUAL', label: '手动解锁' },
-  { value: 'AFTER_X_DAYS', label: 'X天后解锁' },
-  { value: 'MILESTONE', label: '达成条件后解锁' },
+  { value: 'DAILY', label: 'Unlock Daily' },
+  { value: 'LINEAR', label: 'Unlock After Previous' },
+  { value: 'MANUAL', label: 'Manually Unlock' },
+  { value: 'AFTER_X_DAYS', label: 'Unlock After X Days' },
+  { value: 'MILESTONE', label: 'Unlock After Milestone' },
 ]
 
 export default function TaskDayMetaPanel({
@@ -35,7 +35,6 @@ export default function TaskDayMetaPanel({
   const [note, setNote] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // 保存配置：写入数据库
   const handleSave = async () => {
     if (!trackId) return
     setLoading(true)
@@ -58,7 +57,7 @@ export default function TaskDayMetaPanel({
         onMetaSaved(dayIndex, goalType)
       }
     } catch (err) {
-      console.error('保存失败:', err)
+      console.error('Failed to save:', err)
     } finally {
       setLoading(false)
     }
@@ -66,20 +65,17 @@ export default function TaskDayMetaPanel({
 
   return (
     <div className="bg-gray-900 text-white p-4 rounded-xl border border-gray-700 space-y-4">
-      <h2 className="text-xl font-semibold">📌 第 {dayIndex} 天任务配置</h2>
+      <h2 className="text-xl font-semibold">📌 Day {dayIndex} Configuration</h2>
 
-      {/* 任务类型 */}
+      {/* Task Type */}
       <section>
-        <label className="block mb-1 text-sm text-gray-400">任务类型</label>
+        <label className="block mb-1 text-sm text-gray-400">Task Type</label>
         <div className="flex flex-wrap gap-2">
           {goalTypeOptions.map((opt) => (
             <button
               key={opt.value}
               type="button"
-              onClick={() => {
-                setGoalType(opt.value)
-                onMetaSaved(dayIndex, opt.value) // ✅ 实时通知父组件更新面板
-              }}
+              onClick={() => setGoalType(opt.value)}
               className={`px-3 py-1 rounded-full text-sm border transition-all ${
                 goalType === opt.value
                   ? 'bg-purple-600 text-white border-purple-400'
@@ -92,9 +88,9 @@ export default function TaskDayMetaPanel({
         </div>
       </section>
 
-      {/* 解锁模式 */}
+      {/* Unlock Mode */}
       <section>
-        <label className="block mb-1 text-sm text-gray-400">解锁模式</label>
+        <label className="block mb-1 text-sm text-gray-400">Unlock Mode</label>
         <div className="flex flex-wrap gap-2">
           {unlockModeOptions.map((opt) => (
             <button
@@ -113,19 +109,19 @@ export default function TaskDayMetaPanel({
         </div>
       </section>
 
-      {/* 备注说明 */}
+      {/* Notes */}
       <section>
-        <label className="block mb-1 text-sm text-gray-400">备注</label>
+        <label className="block mb-1 text-sm text-gray-400">Notes (Optional)</label>
         <input
           type="text"
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="选填，对本日任务的补充说明"
+          placeholder="Optional description for this day"
           className="w-full px-3 py-2 rounded bg-gray-800 border border-gray-600 text-white"
         />
       </section>
 
-      {/* 保存按钮 */}
+      {/* Save Button */}
       <div>
         <button
           type="button"
@@ -133,7 +129,7 @@ export default function TaskDayMetaPanel({
           disabled={loading}
           className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded text-white"
         >
-          {loading ? '保存中...' : '💾 保存任务配置'}
+          {loading ? 'Saving...' : '💾 Save Configuration'}
         </button>
       </div>
     </div>

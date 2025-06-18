@@ -1,4 +1,3 @@
-// components/auth/RegisterForm.tsx
 "use client";
 
 import { useState } from "react";
@@ -25,42 +24,42 @@ export default function RegisterForm() {
     const data = await res.json();
 
     if (!data.success) {
-      setError(data.error || "注册失败");
+      setError(data.error || "Registration failed.");
       return;
     }
 
     localStorage.setItem("token", data.token);
-    if (data.user.role === "CREATOR") {
-  router.push("/creator/dashboard");
-} else {
-  router.push("/store");
-}
 
+    if (data.user.role === "CREATOR") {
+      router.push("/creator/dashboard");
+    } else {
+      router.push("/store");
+    }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 w-full max-w-md mx-auto">
-      <h2 className="text-2xl font-bold">注册账号</h2>
+      <h2 className="text-2xl font-bold">Create Account</h2>
 
       {error && <div className="text-red-500 text-sm">{error}</div>}
 
       <input
         type="text"
-        placeholder="昵称"
+        placeholder="Name"
         value={name}
         onChange={(e) => setName(e.target.value)}
         className="w-full px-4 py-2 border rounded bg-black text-white"
       />
       <input
         type="email"
-        placeholder="邮箱"
+        placeholder="Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         className="w-full px-4 py-2 border rounded bg-black text-white"
       />
       <input
         type="password"
-        placeholder="密码"
+        placeholder="Password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         className="w-full px-4 py-2 border rounded bg-black text-white"
@@ -71,12 +70,12 @@ export default function RegisterForm() {
         onChange={(e) => setRole(e.target.value)}
         className="w-full px-4 py-2 border rounded bg-black text-white"
       >
-        <option value="PARTICIPANT">参与者</option>
-        <option value="CREATOR">创作者</option>
+        <option value="PARTICIPANT">Participant</option>
+        <option value="CREATOR">Creator</option>
       </select>
 
       <button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded">
-        注册
+        Sign Up
       </button>
     </form>
   );

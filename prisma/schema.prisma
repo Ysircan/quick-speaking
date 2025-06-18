@@ -52,15 +52,15 @@ enum QuestionType {
 }
 
 enum FileType {
-  pdf
-  ppt
-  doc
-  txt
-  image
-  audio
-  zip
-  video
-  other
+  PDF
+  PPT
+  DOC
+  TXT
+  IMAGE
+  AUDIO
+  ZIP
+  VIDEO
+  OTHER
 }
 
 enum MediaType {
@@ -207,6 +207,7 @@ model Task {
   updatedAt     DateTime  @updatedAt
   appearanceWeight Int @default(100)
 
+
   answerFeedbacks AnswerFeedback[]
   wrongBooks      WrongBook[]
   
@@ -250,7 +251,7 @@ model TrackDrop {
   id            String   @id @default(cuid())
   configId      String
   cardId        String   // 应指向 Card 模型
-  probability   Float    @default(1.0)
+  probability          Int      @default(100) // ✅ 改成 Int
   quantity      Int      @default(1)
   description   String?
   startAt       DateTime?
@@ -265,7 +266,7 @@ model TaskDrop {
   id                   String   @id @default(cuid())
   taskId               String
   cardId               String
-  probability          Float    @default(1.0)
+  probability          Int      @default(100) // ✅ 改成 Int
   description          String?
   requireCorrectAnswer Boolean  @default(false)
   startAt              DateTime?
@@ -273,6 +274,7 @@ model TaskDrop {
 
   task                 Task         @relation(fields: [taskId], references: [id])
   card  Card @relation(fields: [cardId], references: [id])
+  @@unique([taskId, cardId])  // ✅ 添加这一行
 }
 
 model EnrolledTrack {
@@ -428,7 +430,7 @@ model CardContent {
   extraUrl     String?
   tags         String[]
   language     String?
-
+  blocks       Json?    // ✅ 用于存储编辑器元素数据结构（文本、图片、音频等）
   createdById  String
   createdBy    User     @relation(fields: [createdById], references: [id])
   createdAt    DateTime @default(now())

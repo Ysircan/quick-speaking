@@ -1,4 +1,3 @@
-// components/auth/LoginForm.tsx
 "use client";
 
 import { useState } from "react";
@@ -23,42 +22,42 @@ export default function LoginForm() {
     const data = await res.json();
 
     if (!data.success) {
-      setError(data.error || "登录失败");
+      setError(data.error || "Login failed.");
       return;
     }
 
     localStorage.setItem("token", data.token);
-   if (data.user.role === "CREATOR") {
-  router.push("/creator/dashboard");
-} else {
-  router.push("/store");
-}
 
+    if (data.user.role === "CREATOR") {
+      router.push("/creator/dashboard");
+    } else {
+      router.push("/store");
+    }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 w-full max-w-md mx-auto">
-      <h2 className="text-2xl font-bold">登录</h2>
+      <h2 className="text-2xl font-bold">Sign In</h2>
 
       {error && <div className="text-red-500 text-sm">{error}</div>}
 
       <input
         type="email"
-        placeholder="邮箱"
+        placeholder="Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         className="w-full px-4 py-2 border rounded bg-black text-white"
       />
       <input
         type="password"
-        placeholder="密码"
+        placeholder="Password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         className="w-full px-4 py-2 border rounded bg-black text-white"
       />
 
       <button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded">
-        登录
+        Log In
       </button>
     </form>
   );

@@ -8,12 +8,12 @@ export async function POST(req: NextRequest) {
     const { email, password } = await req.json();
 
     if (!email || !password) {
-      return NextResponse.json({ success: false, error: "缺少必要字段" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Missing required fields." }, { status: 400 });
     }
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      return NextResponse.json({ success: false, error: "邮箱或密码错误" }, { status: 401 });
+      return NextResponse.json({ success: false, error: "Invalid email or password." }, { status: 401 });
     }
 
     const token = jwt.sign(
@@ -34,6 +34,6 @@ export async function POST(req: NextRequest) {
       }
     });
   } catch (err) {
-    return NextResponse.json({ success: false, error: "服务器错误" }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Internal server error." }, { status: 500 });
   }
 }

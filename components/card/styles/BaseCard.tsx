@@ -4,8 +4,10 @@ import React from 'react'
 
 interface BaseCardProps {
   onClick?: () => void
-  icon?: string
+   icon?: React.ReactNode
   label?: string
+  mediaUrl?: string // ← 用于渲染背景图或边框图层
+  rarity?: string   // ← 控制边框颜色、阴影等
   variant?: 'default' | 'gold' | 'silver'
 }
 
@@ -20,11 +22,12 @@ const variantStyles = {
     shadow:
       'shadow-[0_0_12px_rgba(255,215,0,0.33)] hover:shadow-[0_0_20px_rgba(255,215,0,0.66),_inset_0_0_30px_rgba(255,215,0,0.33)]',
   },
- silver: {
+silver: {
   border: 'border-red-500',
   shadow:
     'shadow-[0_0_12px_rgba(255,0,0,0.33)] hover:shadow-[0_0_20px_rgba(255,0,0,0.66),_inset_0_0_30px_rgba(255,0,0,0.33)]',
 },
+
 
 }
 

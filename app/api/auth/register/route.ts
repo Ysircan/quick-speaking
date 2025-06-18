@@ -8,12 +8,12 @@ export async function POST(req: NextRequest) {
     const { name, email, password, role = "PARTICIPANT" } = await req.json();
 
     if (!name || !email || !password) {
-      return NextResponse.json({ success: false, error: "缺少必要字段" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Missing required fields." }, { status: 400 });
     }
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
-      return NextResponse.json({ success: false, error: "邮箱已被注册" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Email is already registered." }, { status: 400 });
     }
 
     const hashed = await bcrypt.hash(password, 10);
@@ -46,6 +46,6 @@ export async function POST(req: NextRequest) {
       }
     });
   } catch (err) {
-    return NextResponse.json({ success: false, error: "服务器错误" }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Internal server error." }, { status: 500 });
   }
 }

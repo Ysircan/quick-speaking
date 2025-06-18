@@ -19,12 +19,12 @@ export default function LoginPage() {
         <LoginForm />
 
         <p className="text-sm text-center text-gray-400">
-          还没有账号？
+          Don't have an account?
           <Link
             href="/auth/register"
             className="ml-1 underline text-purple-400 hover:text-purple-300 transition"
           >
-            去注册
+            Sign up
           </Link>
         </p>
       </div>
