@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { fetchWithToken } from '@/lib/fetchWithToken'
 import useAuth from '@/hooks/useAuth'
@@ -14,6 +14,25 @@ export default function EnrollButton({ trackId }: EnrollButtonProps) {
   const { user, loading } = useAuth()
   const [enrolling, setEnrolling] = useState(false)
   const [message, setMessage] = useState('')
+  const [enrolled, setEnrolled] = useState(false)
+
+  useEffect(() => {
+    const checkEnrolled = async () => {
+      if (!user || user.role !== 'PARTICIPANT') return
+      try {
+        const res = await fetchWithToken('/api/store/enroll/status', {
+          method: 'POST',
+          body: JSON.stringify({ trackId }),
+        })
+        const data = await res.json()
+        if (data.enrolled) setEnrolled(true)
+      } catch (err) {
+        console.error('❌ 获取报名状态失败')
+      }
+    }
+
+    checkEnrolled()
+  }, [user, trackId])
 
   const handleEnroll = async () => {
     if (!user) {
@@ -54,13 +73,22 @@ export default function EnrollButton({ trackId }: EnrollButtonProps) {
 
   return (
     <div className="space-y-2">
-      <button
-        onClick={handleEnroll}
-        disabled={enrolling}
-        className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
-      >
-        立即报名训练营
-      </button>
+      {enrolled ? (
+        <button
+          onClick={() => router.push(`/camp/${trackId}`)}
+          className="px-4 py-2 bg-green-600 text-white rounded"
+        >
+          进入训练营
+        </button>
+      ) : (
+        <button
+          onClick={handleEnroll}
+          disabled={enrolling}
+          className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
+        >
+          立即报名训练营
+        </button>
+      )}
       {message && <div className="text-sm text-gray-600">{message}</div>}
     </div>
   )
