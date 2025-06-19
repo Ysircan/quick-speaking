@@ -37,7 +37,7 @@ export default function StoreTrackList() {
           {tracks.map((track) => (
             <div
               key={track.id}
-              onClick={() => router.push(`/camp/${track.id}`)}
+              onClick={() => router.push(`/store/${track.id}`)}
               className="bg-white rounded-xl shadow hover:shadow-lg transition overflow-hidden cursor-pointer"
             >
               <div className="h-32 bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
