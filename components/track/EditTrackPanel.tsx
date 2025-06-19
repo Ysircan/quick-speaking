@@ -33,6 +33,7 @@ export default function EditTrackPanel() {
   const [panelVisible, setPanelVisible] = useState(false)
   const [currentGoalType, setCurrentGoalType] = useState<string | null>(null)
   const panelRef = useRef<HTMLDivElement>(null)
+  
 
   // 拉取训练营信息（含天数和 dayMetas）
   useEffect(() => {
@@ -55,19 +56,33 @@ export default function EditTrackPanel() {
   }, [trackId])
 
   // 同步更新天数到数据库
-  const updateDurationDays = async (newDays: number) => {
-    setTotalDays(newDays)
-    if (!trackId) return
-    try {
-      await fetchWithToken(`/api/create/track/${trackId}/duration`, {
-        method: 'PUT',
-        body: JSON.stringify({ durationDays: newDays }),
-      })
-    } catch (err) {
-      console.error('更新天数失败', err)
+const updateDurationDays = async (newDays: number) => {
+  setTotalDays(newDays)
+  if (!trackId) return
+
+  const token = localStorage.getItem('token') // 或者你保存 token 的地方
+
+  try {
+    const res = await fetch(`/api/create/track/${trackId}/updateDay`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // ✅ 加上这一行
+      },
+      body: JSON.stringify({ durationDays: newDays }),
+    })
+
+    if (!res.ok) {
+      const error = await res.json()
+      console.error('更新天数失败：', error)
     }
-    setActiveDay((prev) => (prev > newDays ? newDays : prev))
+  } catch (err) {
+    console.error('更新天数失败', err)
   }
+
+  setActiveDay((prev) => (prev > newDays ? newDays : prev))
+}
+
 
   // 切换天数
   const handleDayChange = (day: number) => {

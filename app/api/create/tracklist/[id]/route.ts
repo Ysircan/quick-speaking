@@ -16,6 +16,7 @@ export async function DELETE(
   const trackId = params.id
 
   try {
+    // 校验权限
     const track = await prisma.track.findUnique({
       where: { id: trackId },
     })
@@ -24,8 +25,50 @@ export async function DELETE(
       return NextResponse.json({ error: 'Track not found or unauthorized' }, { status: 404 })
     }
 
+    // 开始级联删除所有关联内容 ↓↓↓
+
+    // 删除掉落记录（TaskDrop 关联 Task → Task 属于 Track）
+    await prisma.taskDrop.deleteMany({
+      where: {
+        task: {
+          trackId,
+        },
+      },
+    })
+
+    // 删除任务（Task）
+    await prisma.task.deleteMany({
+      where: {
+        trackId,
+      },
+    })
+
+    // 删除天数配置（TrackDayMeta）
+    await prisma.trackDayMeta.deleteMany({
+      where: {
+        trackId,
+      },
+    })
+
+    // 删除报名进度（EnrolledDayProgress）
+    await prisma.enrolledDayProgress.deleteMany({
+      where: {
+        trackId,
+      },
+    })
+
+    // 删除报名记录（EnrolledTrack）
+    await prisma.enrolledTrack.deleteMany({
+      where: {
+        trackId,
+      },
+    })
+
+    // 最后删除 Track 本体
     await prisma.track.delete({
-      where: { id: trackId },
+      where: {
+        id: trackId,
+      },
     })
 
     return NextResponse.json({ success: true })
