@@ -30,9 +30,7 @@ export default function RecentTracks() {
           },
         })
 
-        if (!res.ok) {
-          throw new Error(`请求失败：${res.status}`)
-        }
+        if (!res.ok) throw new Error(`请求失败：${res.status}`)
 
         const data = await res.json()
         setTracks(data.tracks || [])
@@ -45,24 +43,35 @@ export default function RecentTracks() {
   }, [])
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-base font-semibold text-white/80">Your Recent Tracks</h3>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {tracks.map((track) => (
-          <TrackCard
-            key={track.id}
-            title={track.title}
-            subtitle={
-              track.status === 'DRAFT'
-                ? 'Draft'
-                : `Updated: ${new Date(track.updatedAt).toLocaleDateString()}`
-            }
-            onClick={() => {
-              window.location.href = `/creator/dashboard/track/${track.id}/content`
-            }}
-          />
-        ))}
-      </div>
+    <div className="px-4 sm:px-0 space-y-4">
+      <h3 className="text-base font-semibold text-white/80">
+        Your Recent Tracks
+      </h3>
+
+      {tracks.length === 0 ? (
+        <p className="text-sm text-white/50">No tracks created yet.</p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          {tracks.map((track) => (
+            <div
+              key={track.id}
+              onClick={() =>
+                window.location.href = `/creator/dashboard/track/${track.id}/content`
+              }
+              className="cursor-pointer rounded-xl bg-white/5 p-4 backdrop-blur-sm hover:bg-white/10 transition-all"
+            >
+              <TrackCard
+                title={track.title}
+                subtitle={
+                  track.status === 'DRAFT'
+                    ? 'Draft'
+                    : `Updated: ${new Date(track.updatedAt).toLocaleDateString()}`
+                }
+              />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

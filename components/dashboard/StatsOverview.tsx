@@ -39,12 +39,20 @@ export default function StatsOverview() {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-base font-semibold text-white/80">Statistics Overview</h3>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <h3 className="text-base font-semibold text-white/80">
+        Statistics Overview
+      </h3>
+      <div className="flex flex-wrap gap-4">
         <StatCard label="Courses" value={stats?.courses ?? '--'} />
         <StatCard label="Students" value={stats?.students ?? '--'} />
-        <StatCard label="Completion" value={stats ? `${stats.completion}%` : '--'} />
-        <StatCard label="Cards Earned" value={stats?.cardsEarned ?? '--'} />
+        <StatCard
+          label="Completion"
+          value={stats ? `${stats.completion}%` : '--'}
+        />
+        <StatCard
+          label="Cards Earned"
+          value={stats?.cardsEarned ?? '--'}
+        />
       </div>
     </div>
   )

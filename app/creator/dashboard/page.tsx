@@ -25,8 +25,6 @@ export default function CreatorDashboardPage() {
 
         const data = await res.json()
         console.log('✅ 当前用户信息:', data)
-
-        // 🔥 关键在这，正确读取嵌套字段
         setUserName(data.user?.name ?? 'Creator')
       } catch (err) {
         console.error('❌ 获取用户失败:', err)
@@ -40,11 +38,15 @@ export default function CreatorDashboardPage() {
     <div className="relative text-white min-h-screen overflow-hidden">
       <DefaultBackground />
 
-      <div className="relative z-10 flex">
-        <Sidebar userName={userName} />
+      <div className="relative z-10 flex flex-col md:flex-row">
+        {/* 左侧 Sidebar：移动端隐藏 */}
+        <div className="hidden md:block">
+          <Sidebar userName={userName} />
+        </div>
 
-        <main className="flex-1 px-6 py-16 flex justify-center">
-          <div className="max-w-5xl w-full space-y-16">
+        {/* 右侧主内容 */}
+        <main className="flex-1 px-4 sm:px-6 py-12 sm:py-16 flex justify-center">
+          <div className="w-full max-w-5xl space-y-16">
             <DashboardHeader userName={userName} />
             <RecentTracks />
             <StatsOverview />

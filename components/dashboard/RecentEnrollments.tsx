@@ -36,25 +36,29 @@ export default function RecentEnrollments() {
   }, [])
 
   return (
-    <div className="space-y-4 mt-10">
+    <div className="space-y-4 mt-10 px-4 sm:px-0">
       <h3 className="text-base font-semibold text-white/80">Recent Enrollments</h3>
       {enrollments.length === 0 ? (
         <p className="text-sm text-white/50">No recent enrollments.</p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="space-y-3">
           {enrollments.map((item) => (
             <li
               key={item.id}
-              className="bg-white/5 backdrop-blur-md rounded-lg p-4 text-sm text-white/90 flex justify-between items-center"
+              className="bg-white/5 backdrop-blur-md rounded-xl p-4 text-sm text-white/90 flex flex-col sm:flex-row sm:justify-between sm:items-center"
             >
-              <div>
+              <div className="space-y-1">
                 <div className="font-semibold">{item.studentName}</div>
                 <div className="text-white/60">
                   joined <span className="italic">{item.trackTitle}</span>
                 </div>
               </div>
-              <div className="text-xs text-white/40">
-                {new Date(item.enrolledAt).toLocaleDateString()}
+              <div className="text-xs text-white/40 mt-2 sm:mt-0 sm:text-right">
+                {new Date(item.enrolledAt).toLocaleDateString(undefined, {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                })}
               </div>
             </li>
           ))}
