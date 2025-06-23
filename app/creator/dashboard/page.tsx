@@ -1,35 +1,57 @@
-"use client"; // ⬅️ Required for client-side rendering
+'use client'
 
-import { useRouter } from "next/navigation";
-import useAuth from "@/hooks/useAuth";
-import LogoutButton from "@/components/auth/LogoutButton";
+import { useEffect, useState } from 'react'
+import DefaultBackground from '@/components/default/background'
+import Sidebar from '@/components/dashboard/Sidebar'
+import DashboardHeader from '@/components/dashboard/DashboardHeader'
+import RecentTracks from '@/components/dashboard/RecentTracks'
+import StatsOverview from '@/components/dashboard/StatsOverview'
+import RecentEnrollments from '@/components/dashboard/RecentEnrollments'
 
-export default function CreatorDashboard() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
+export default function CreatorDashboardPage() {
+  const [userName, setUserName] = useState('')
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-black text-white">
-        <p className="text-gray-400">Loading...</p>
-      </div>
-    );
-  }
+  useEffect(() => {
+    const fetchUser = async () => {
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      try {
+        const res = await fetch('/api/auth/me', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        const data = await res.json()
+        console.log('✅ 当前用户信息:', data)
+
+        // 🔥 关键在这，正确读取嵌套字段
+        setUserName(data.user?.name ?? 'Creator')
+      } catch (err) {
+        console.error('❌ 获取用户失败:', err)
+      }
+    }
+
+    fetchUser()
+  }, [])
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white space-y-4">
-      <h1 className="text-3xl font-bold">🎓 Welcome back, {user?.name}!</h1>
-      <p className="text-sm text-gray-400">Your role: {user?.role}</p>
+    <div className="relative text-white min-h-screen overflow-hidden">
+      <DefaultBackground />
 
-      <button
-        onClick={() => router.push("/creator/dashboard/track/new")}
-        className="px-4 py-2 bg-purple-600 rounded-lg hover:bg-purple-500 transition-all"
-      >
-        + Create New Bootcamp
-      </button>
+      <div className="relative z-10 flex">
+        <Sidebar userName={userName} />
 
-      <LogoutButton />
+        <main className="flex-1 px-6 py-16 flex justify-center">
+          <div className="max-w-5xl w-full space-y-16">
+            <DashboardHeader userName={userName} />
+            <RecentTracks />
+            <StatsOverview />
+            <RecentEnrollments />
+          </div>
+        </main>
+      </div>
     </div>
-  );
+  )
 }
- 

@@ -1,64 +1,60 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from 'react'
+import EmailInput from './EmailInput'
+import PasswordInput from './PasswordInput'
+import SubmitButton from './SubmitButton'
 
 export default function LoginForm() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const router = useRouter();
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
+  const handleLogin = async () => {
+    setLoading(true)
+    setError(null)
 
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
 
-    const data = await res.json();
+      const data = await res.json()
 
-    if (!data.success) {
-      setError(data.error || "Login failed.");
-      return;
-    }
+      if (!res.ok) {
+        setError(data.error || 'Login failed')
+        return
+      }
 
-    localStorage.setItem("token", data.token);
+      // 保存 token
+      localStorage.setItem('token', data.token)
 
-    if (data.user.role === "CREATOR") {
-      router.push("/creator/dashboard");
-    } else {
-      router.push("/store");
+      // 身份判断后跳转
+      const role = data.user?.role
+      if (role === 'CREATOR') {
+        window.location.href = '/creator/dashboard'
+      } else {
+        window.location.href = '/store'
+      }
+    } catch (err) {
+      console.error('Login error:', err)
+      setError('Something went wrong')
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 w-full max-w-md mx-auto">
-      <h2 className="text-2xl font-bold">Sign In</h2>
-
-      {error && <div className="text-red-500 text-sm">{error}</div>}
-
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        className="w-full px-4 py-2 border rounded bg-black text-white"
-      />
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        className="w-full px-4 py-2 border rounded bg-black text-white"
-      />
-
-      <button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded">
-        Log In
-      </button>
-    </form>
-  );
+    <div className="flex flex-col gap-4">
+      <EmailInput value={email} onChange={setEmail} />
+      <PasswordInput value={password} onChange={setPassword} />
+      {error && <p className="text-red-400 text-sm">{error}</p>}
+      <SubmitButton onClick={handleLogin} loading={loading}>
+        Sign In
+      </SubmitButton>
+    </div>
+  )
 }

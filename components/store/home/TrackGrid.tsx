@@ -37,7 +37,7 @@ export default function TrackGrid() {
         {tracks.map((track) => (
           <Link
             key={track.id}
-            href={`/store/${track.id}/library`}
+            href={`/store/${track.id}`}
             className="bg-white rounded-xl shadow hover:shadow-lg transition overflow-hidden"
           >
             <div className="h-32 bg-gray-200 flex items-center justify-center text-gray-500 text-sm">

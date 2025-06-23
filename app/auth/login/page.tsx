@@ -1,33 +1,24 @@
-// app/auth/login/page.tsx
-"use client";
+'use client'
 
-import { motion } from "framer-motion";
-import LoginForm from "@/components/auth/LoginForm";
-import Link from "next/link";
+import DefaultBackground from '@/components/default/background'
+import AuthPanel from '@/components/auth/AuthPanel'
+import Navbar from '@/components/default/Navbar'
 
 export default function LoginPage() {
   return (
-    <motion.div
-      initial={{ x: 80, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      exit={{ x: -80, opacity: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className="min-h-screen flex flex-col items-center justify-center bg-black text-white px-4"
-    >
-      <div className="w-full max-w-md space-y-6">
-        <h1 className="text-3xl font-extrabold text-center">Welcome back 👋</h1>
-        <LoginForm />
+    <div className="relative w-full h-screen overflow-hidden bg-black text-white">
+      {/* 背景层 */}
+      <DefaultBackground />
 
-        <p className="text-sm text-center text-gray-400">
-          Don't have an account?
-          <Link
-            href="/auth/register"
-            className="ml-1 underline text-purple-400 hover:text-purple-300 transition"
-          >
-            Sign up
-          </Link>
-        </p>
+      {/* 顶部导航栏 */}
+      <div className="relative z-20">
+        <Navbar />
       </div>
-    </motion.div>
-  );
+
+      {/* 登录注册 UI 面板（垂直水平居中） */}
+      <div className="relative z-10 flex h-full w-full items-center justify-center px-4 py-8 sm:py-0">
+        <AuthPanel />
+      </div>
+    </div>
+  )
 }

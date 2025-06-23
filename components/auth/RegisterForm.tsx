@@ -1,82 +1,83 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from 'react'
+import NameInput from './NameInput'
+import EmailInput from './EmailInput'
+import PasswordInput from './PasswordInput'
+import ConfirmPasswordInput from './ConfirmPasswordInput'
+import SubmitButton from './SubmitButton'
+import RoleSwitcher from './RoleSwitcher'
 
 export default function RegisterForm() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [role, setRole] = useState("PARTICIPANT");
-  const [error, setError] = useState("");
-  const router = useRouter();
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [role, setRole] = useState<'PARTICIPANT' | 'CREATOR'>('PARTICIPANT')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
+  const handleRegister = async () => {
+    setError(null)
 
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password, role }),
-    });
-
-    const data = await res.json();
-
-    if (!data.success) {
-      setError(data.error || "Registration failed.");
-      return;
+    if (!name || !email || !password || !confirm) {
+      setError('Please fill in all fields.')
+      return
     }
 
-    localStorage.setItem("token", data.token);
+    if (password !== confirm) {
+      setError('Passwords do not match.')
+      return
+    }
 
-    if (data.user.role === "CREATOR") {
-      router.push("/creator/dashboard");
-    } else {
-      router.push("/store");
+    setLoading(true)
+
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password, role }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || 'Registration failed.')
+        return
+      }
+
+      localStorage.setItem('token', data.token)
+
+      if (role === 'CREATOR') {
+        window.location.href = '/creator/dashboard'
+      } else {
+        window.location.href = '/store'
+      }
+    } catch (err) {
+      console.error('Registration error:', err)
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 w-full max-w-md mx-auto">
-      <h2 className="text-2xl font-bold">Create Account</h2>
+    <div className="flex flex-col gap-4 w-full max-w-md mx-auto">
+      <NameInput value={name} onChange={setName} />
+      <EmailInput value={email} onChange={setEmail} />
+      <PasswordInput value={password} onChange={setPassword} />
+      <ConfirmPasswordInput value={confirm} onChange={setConfirm} />
+      <RoleSwitcher value={role} onChange={setRole} />
 
-      {error && <div className="text-red-500 text-sm">{error}</div>}
+      {error && (
+        <p className="text-red-400 text-sm text-center font-medium">
+          {error}
+        </p>
+      )}
 
-      <input
-        type="text"
-        placeholder="Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        className="w-full px-4 py-2 border rounded bg-black text-white"
-      />
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        className="w-full px-4 py-2 border rounded bg-black text-white"
-      />
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        className="w-full px-4 py-2 border rounded bg-black text-white"
-      />
-
-      <select
-        value={role}
-        onChange={(e) => setRole(e.target.value)}
-        className="w-full px-4 py-2 border rounded bg-black text-white"
-      >
-        <option value="PARTICIPANT">Participant</option>
-        <option value="CREATOR">Creator</option>
-      </select>
-
-      <button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded">
-        Sign Up
-      </button>
-    </form>
-  );
+      <SubmitButton onClick={handleRegister} loading={loading}>
+        Register
+      </SubmitButton>
+    </div>
+  )
 }
