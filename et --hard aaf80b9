@@ -1,0 +1,23 @@
+[33maaf80b9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m ✅ 重构 TrackNewWizard：去除封面图上传，修复 TS 报错，完善向导流程
+[33m19be94a[m 💻 Dashboard mobile support complete + UI adjustments
+[33m7629694[m ✨ Dashboard 完成用户识别与展示：Sidebar 与 Header 成功显示用户名
+[33m2f2590e[m feat: 商城首页接入 /api/store 接口，完成课程拉取与渲染
+[33m0d1ea56[m feat: 学生端报名功能完成，支持判断身份、报名写入、跳转副本，按钮状态自动切换
+[33m78aa2d4[m  学生端报名模块初步完成：引入报名按钮、身份验证、Track详情页展示、API权限控制
+[33m25e700b[m 🎯 商城模块重构完成：Track 列表拉通 + 多模块组件拆分
+[33m88e774c[m  从这里开始商店：穿透查询闭环 + Day按钮视觉优化 + Track天数更新接口完成
+[33mb73094d[m feat: 增删天数功能完成，支持动态调整训练营天数及同步数据库
+[33m6dbf72f[m feat: 动态增减天数正在实现，完成接口及前端同步功能
+[33m2fc1fbb[m feat: 动态增减天数正在实现，新增接口及前端同步功能
+[33m3278d4a[m  tracklist：完成训练营列表页功能开发，支持发布、撤销发布、删除与卡片展示
+[33m5cb43b3[m 📦 publish前准备：统一使用 fetchWithToken 修复鉴权问题，准备发布版本
+[33m9d3cf31[m feat: 新增 CardTemplateSelector 组件，可正常渲染卡牌模板并映射 variant 样式
+[33m6f79cf7[m feat: 完成任务配置页面的卡片掉落功能 + 无卡片时跳转到卡片创建页
+[33md6b9de8[m  完成题目保存与配置系统：支持中区生成、保存；右区实时拉取与删除
+[33mbf5bb57[m feat: 实时同步任务类型与面板展示
+[33m738152a[m feat: 实现每日任务节奏配置 UI + 实时更新 DayTabs
+[33m1f9ce84[m 初始推送：卡牌准备绑定
+[33ma4a4c63[m ✨ 完成题目渲染功能：支持题干、选项、答案显示与挑选
+[33m7da984e[m 🎉 初始化 Quick 平台：完成创建训练营功能（页面 + 组件 + 接口）
+[33mfa9a876[m feat: Quick 平台初始版本 v0.1.0
+[33m9b02951[m Initial commit from Create Next App

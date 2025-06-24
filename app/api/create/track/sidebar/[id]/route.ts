@@ -4,13 +4,14 @@ import getCurrentUserFromRequest from '@/lib/getCurrentUser'
 
 export async function GET(
   req: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
   const user = await getCurrentUserFromRequest(req)
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
-  const trackId = context.params.id
-  if (!trackId) return NextResponse.json({ error: 'Missing track ID' }, { status: 400 })
+  const trackId = params.id
 
   try {
     const track = await prisma.track.findUnique({
@@ -18,20 +19,26 @@ export async function GET(
         id: trackId,
         createdById: user.id,
       },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        durationDays: true,
-        isPublished: true,
+      include: {
+        dayMetas: {
+          select: { dayIndex: true },
+          orderBy: { dayIndex: 'asc' },
+        },
       },
     })
 
-    if (!track) return NextResponse.json({ error: 'Track not found.' }, { status: 404 })
+    if (!track) {
+      return NextResponse.json({ error: 'Track not found' }, { status: 404 })
+    }
 
-    return NextResponse.json(track)
+    return NextResponse.json({
+      title: track.title,
+      description: track.description,
+      isPublished: track.isPublished,
+      dayMetas: track.dayMetas, // ✅ 直接返回 dayIndex 数组
+    })
   } catch (err) {
-    console.error('❌ Error fetching track sidebar:', err)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('❌ Error fetching sidebar data:', err)
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }

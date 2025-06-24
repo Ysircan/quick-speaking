@@ -1,74 +1,138 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import SidebarHeader from './SidebarHeader'
+import DayList from './DayList'
+import AddDayButton from './AddDayButton'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface TrackSidebarData {
   title: string
   description: string | null
-  durationDays: number
   isPublished: boolean
+  dayMetas: { dayIndex: number }[]
 }
 
 export default function TrackSidebar({ trackId }: { trackId: string }) {
   const [data, setData] = useState<TrackSidebarData | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [fadeOut, setFadeOut] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(false)
+
+  const fetchData = async () => {
+    const token = localStorage.getItem('token')
+    if (!token) return
+
+    try {
+      const res = await fetch(`/api/create/track/sidebar/${trackId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      const json = await res.json()
+      if (res.ok) {
+        setData(json)
+      } else {
+        console.error('❌ Failed to fetch:', json.error)
+      }
+    } catch (err) {
+      console.error('❌ Network error:', err)
+    }
+  }
 
   useEffect(() => {
-    const fetchData = async () => {
-      const token = localStorage.getItem('token')
-      if (!token) {
-        console.error('⚠️ No token found in localStorage')
-        return
+    fetchData()
+  }, [trackId, refreshKey])
+
+  useEffect(() => {
+    if (message) {
+      setFadeOut(false)
+      const t1 = setTimeout(() => setFadeOut(true), 2000)
+      const t2 = setTimeout(() => setMessage(null), 3000)
+      return () => {
+        clearTimeout(t1)
+        clearTimeout(t2)
       }
+    }
+  }, [message])
 
-      try {
-        const res = await fetch(`/api/create/track/sidebar/${trackId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        })
+  const handleDeleteDay = async (dayIndex: number, displayNumber: number) => {
+    const token = localStorage.getItem('token')
+    if (!token) return
 
-        const json = await res.json()
-        if (res.ok) {
-          setData(json)
-        } else {
-          console.error('❌ Fetch failed:', json.error)
+    setLoading(true)
+    setMessage(null)
+
+    try {
+      const res = await fetch(
+        `/api/create/track/sidebar/${trackId}/day/${dayIndex}/delete`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
         }
-      } catch (err) {
-        console.error('❌ Error fetching track sidebar:', err)
-      }
-    }
+      )
 
-    if (trackId) {
-      fetchData()
+      const json = await res.json()
+      if (res.ok) {
+        setMessage(`✅ Day ${displayNumber} deleted`)
+        setRefreshKey((k) => k + 1)
+      } else {
+        setMessage(`❌ Failed: ${json.error || 'Unknown error'}`)
+      }
+    } catch {
+      setMessage('❌ Network error while deleting')
+    } finally {
+      setLoading(false)
     }
-  }, [trackId])
+  }
 
   if (!data) return <div className="text-white">Loading Sidebar...</div>
 
   return (
-    <aside className="w-64 bg-black/30 text-white p-4 space-y-4 border-r border-white/10 backdrop-blur-md">
-      <div>
-        <h2 className="text-lg font-bold">{data.title}</h2>
-        <p className="text-sm text-white/50">{data.description}</p>
-      </div>
+    <aside
+      className={`bg-black/30 text-white p-4 border-r border-white/10 backdrop-blur-md transition-all duration-300 ${
+        isCollapsed ? 'w-12' : 'w-64'
+      }`}
+    >
+      {/* 折叠按钮 */}
+      <button
+        className="mb-4 text-white hover:text-yellow-400 transition"
+        onClick={() => setIsCollapsed(!isCollapsed)}
+      >
+        {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+      </button>
 
-      <div>
-        <h3 className="text-sm font-semibold mb-1">Total Days</h3>
-        <div className="flex flex-wrap gap-1">
-          {Array.from({ length: data.durationDays }, (_, i) => (
-            <div
-              key={i}
-              className="w-8 h-8 flex items-center justify-center rounded bg-white/10 hover:bg-white/20 cursor-pointer"
+      {/* 折叠后不显示内容 */}
+      {!isCollapsed && (
+        <div className="space-y-4">
+          <SidebarHeader
+            title={data.title}
+            description={data.description}
+            isPublished={data.isPublished}
+          />
+
+          <DayList dayMetas={data.dayMetas} onDelete={handleDeleteDay} />
+
+          <AddDayButton
+            trackId={trackId}
+            currentDayCount={data.dayMetas.length}
+            onSuccess={() => setRefreshKey((k) => k + 1)}
+          />
+
+          {message && (
+            <p
+              className={`text-xs text-white/70 transition-opacity duration-1000 ${
+                fadeOut ? 'opacity-0' : 'opacity-100'
+              }`}
             >
-              {i + 1}
-            </div>
-          ))}
+              {message}
+            </p>
+          )}
         </div>
-      </div>
-
-      <div className="text-xs text-white/40">
-        {data.isPublished ? '✅ Published' : '🚧 Unpublished'}
-      </div>
+      )}
     </aside>
   )
 }
