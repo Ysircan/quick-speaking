@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing or invalid fields' }, { status: 400 })
     }
 
+    // 创建 Track 本体
     const newTrack = await prisma.track.create({
       data: {
         title,
@@ -36,8 +37,17 @@ export async function POST(req: NextRequest) {
         tags: tags || [],
         recommendedFor: recommendedFor || [],
         lang: lang || 'en',
-        // 其他字段自动使用默认值，无需处理
       },
+    })
+
+    // 🧠 创建默认天数配置
+    await prisma.trackDayMeta.createMany({
+      data: Array.from({ length: durationDays }, (_, i) => ({
+        trackId: newTrack.id,
+        dayIndex: i + 1,
+        goalType: 'CHECKIN',   // 默认任务目标类型
+        unlockMode: 'DAILY',   // 默认解锁方式
+      })),
     })
 
     return NextResponse.json({ trackId: newTrack.id }, { status: 201 })
