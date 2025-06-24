@@ -35,18 +35,20 @@ export default function CreatorDashboardPage() {
   }, [])
 
   return (
-    <div className="relative text-white min-h-screen overflow-hidden">
+    <div className="relative w-full min-h-screen text-white overflow-hidden">
+      {/* 背景层 - z-0 */}
       <DefaultBackground />
 
-      <div className="relative z-10 flex flex-col md:flex-row">
-        {/* 左侧 Sidebar：移动端隐藏 */}
-        <div className="hidden md:block">
+      {/* 内容层 - z-10 */}
+      <div className="relative z-10 flex flex-col md:flex-row min-h-screen">
+        {/* Sidebar 区域 */}
+        <aside className="hidden md:block">
           <Sidebar userName={userName} />
-        </div>
+        </aside>
 
-        {/* 右侧主内容 */}
-        <main className="flex-1 px-4 sm:px-6 py-12 sm:py-16 flex justify-center">
-          <div className="w-full max-w-5xl space-y-16">
+        {/* 主内容区域 */}
+        <main className="flex-1 px-4 sm:px-6 py-12 sm:py-16 overflow-y-auto">
+          <div className="max-w-5xl mx-auto space-y-16">
             <DashboardHeader userName={userName} />
             <RecentTracks />
             <StatsOverview />

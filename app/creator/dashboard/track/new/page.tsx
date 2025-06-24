@@ -1,31 +1,20 @@
-"use client"
+'use client'
 
-import CreateTrackForm from "@/components/track/CreateTrackForm"
-import useAuth from "@/hooks/useAuth"
+import DefaultBackground from '@/components/default/background'
+import TrackNewWizard from '@/components/tracknew/TrackNewWizard'
 
 export default function NewTrackPage() {
-  const { user, loading } = useAuth()
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-gray-400">
-        Loading...
-      </div>
-    )
-  }
-
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-red-500">
-        Unauthorized access. Please log in first.
-      </div>
-    )
-  }
-
   return (
-    <div className="max-w-2xl mx-auto px-4 py-10 text-white">
-      <h1 className="text-2xl font-bold mb-6">🎯 Create a New Bootcamp</h1>
-      <CreateTrackForm />
+    <div className="relative w-full min-h-screen text-white overflow-hidden">
+      {/* 背景层 - z-0 */}
+      <DefaultBackground />
+
+      {/* 内容层 - z-10 */}
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-16">
+        <div className="w-full max-w-xl">
+          <TrackNewWizard />
+        </div>
+      </div>
     </div>
   )
 }
