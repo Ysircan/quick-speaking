@@ -27,17 +27,11 @@ export default function TrackSidebar({ trackId }: { trackId: string }) {
 
     try {
       const res = await fetch(`/api/create/track/sidebar/${trackId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       })
-
       const json = await res.json()
-      if (res.ok) {
-        setData(json)
-      } else {
-        console.error('❌ Failed to fetch:', json.error)
-      }
+      if (res.ok) setData(json)
+      else console.error('❌ Failed to fetch:', json.error)
     } catch (err) {
       console.error('❌ Network error:', err)
     }
@@ -48,14 +42,13 @@ export default function TrackSidebar({ trackId }: { trackId: string }) {
   }, [trackId, refreshKey])
 
   useEffect(() => {
-    if (message) {
-      setFadeOut(false)
-      const t1 = setTimeout(() => setFadeOut(true), 2000)
-      const t2 = setTimeout(() => setMessage(null), 3000)
-      return () => {
-        clearTimeout(t1)
-        clearTimeout(t2)
-      }
+    if (!message) return
+    setFadeOut(false)
+    const t1 = setTimeout(() => setFadeOut(true), 2000)
+    const t2 = setTimeout(() => setMessage(null), 3000)
+    return () => {
+      clearTimeout(t1)
+      clearTimeout(t2)
     }
   }, [message])
 
@@ -74,7 +67,6 @@ export default function TrackSidebar({ trackId }: { trackId: string }) {
           headers: { Authorization: `Bearer ${token}` },
         }
       )
-
       const json = await res.json()
       if (res.ok) {
         setMessage(`✅ Day ${displayNumber} deleted`)
@@ -89,23 +81,19 @@ export default function TrackSidebar({ trackId }: { trackId: string }) {
     }
   }
 
-  if (!data) return <div className="text-white">Loading Sidebar...</div>
+  if (!data) return <div className="text-white p-4">Loading Sidebar...</div>
 
   return (
-    <aside
-      className={`bg-black/30 text-white p-4 border-r border-white/10 backdrop-blur-md transition-all duration-300 ${
-        isCollapsed ? 'w-12' : 'w-64'
-      }`}
-    >
-      {/* 折叠按钮 */}
-      <button
-        className="mb-4 text-white hover:text-yellow-400 transition"
-        onClick={() => setIsCollapsed(!isCollapsed)}
-      >
-        {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
-      </button>
+    <div className="w-full h-full backdrop-blur-md bg-[#1a1a3a]/80 px-4 py-6">
+      <div className="mb-6 flex justify-end">
+        <button
+          className="text-white hover:text-yellow-300 transition"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+        >
+          {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+        </button>
+      </div>
 
-      {/* 折叠后不显示内容 */}
       {!isCollapsed && (
         <div className="space-y-4">
           <SidebarHeader
@@ -113,15 +101,12 @@ export default function TrackSidebar({ trackId }: { trackId: string }) {
             description={data.description}
             isPublished={data.isPublished}
           />
-
           <DayList dayMetas={data.dayMetas} onDelete={handleDeleteDay} />
-
           <AddDayButton
             trackId={trackId}
             currentDayCount={data.dayMetas.length}
             onSuccess={() => setRefreshKey((k) => k + 1)}
           />
-
           {message && (
             <p
               className={`text-xs text-white/70 transition-opacity duration-1000 ${
@@ -133,6 +118,6 @@ export default function TrackSidebar({ trackId }: { trackId: string }) {
           )}
         </div>
       )}
-    </aside>
+    </div>
   )
 }
