@@ -4,6 +4,9 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { parse } from 'csv-parse/sync'
 
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 type WordRow = {
   id: string
   task?: string
@@ -67,9 +70,14 @@ function variants(norm: string): string[] {
   return Array.from(v)
 }
 
-export async function POST(req: Request, ctx: { params: { task: string } }) {
+// ✅ Next 15：第二个参数的 params 需为 Promise<...>
+export async function POST(
+  req: Request,
+  { params }: { params: Promise<{ task: string }> }
+) {
   try {
-    const task = (ctx.params.task || '').toLowerCase()
+    const { task: rawTask } = await params
+    const task = (rawTask || '').toLowerCase()
     if (!['ra', 'rs', 'sgd'].includes(task)) {
       return bad(400, `Invalid task: ${task}. Allowed: ra, rs, sgd`)
     }
@@ -82,15 +90,9 @@ export async function POST(req: Request, ctx: { params: { task: string } }) {
     }
 
     const wordsInput: unknown = payload?.words
-    if (!Array.isArray(wordsInput)) {
-      return bad(422, 'Missing "words": string[]')
-    }
-    if (wordsInput.length === 0) {
-      return bad(422, '"words" is empty')
-    }
-    if (wordsInput.length > 200) {
-      return bad(422, '"words" too many; max 200 per request')
-    }
+    if (!Array.isArray(wordsInput)) return bad(422, 'Missing "words": string[]')
+    if (wordsInput.length === 0) return bad(422, '"words" is empty')
+    if (wordsInput.length > 200) return bad(422, '"words" too many; max 200 per request')
 
     // 建索引：同一个 norm 取最高 freq 的条目
     const rows = loadWords().filter(w => (w.task || '').toLowerCase() === task)
@@ -125,7 +127,7 @@ export async function POST(req: Request, ctx: { params: { task: string } }) {
           word: hit.word,
           word_norm: normKey,
           audio: hit.audio || fallback,
-          freq: toNum(hit.freq, 0),     // ← 已统一为 freq_score 的值
+          freq: toNum(hit.freq, 0),
           tags: hit.tags || ''
         }
       } else {

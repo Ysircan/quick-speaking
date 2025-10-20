@@ -4,6 +4,9 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { parse } from 'csv-parse/sync'
 
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 type Task = 'ra' | 'rs' | 'sgd' | string
 
 type WordRow = {
@@ -116,10 +119,15 @@ function loadSentences(): SentenceRow[] {
 }
 
 // ===== main handler =====
-export async function GET(req: Request, ctx: { params: { task: string } }) {
+// ✅ Next 15：第二个参数的 params 需为 Promise<...>
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ task: string }> }
+) {
   try {
     const url = new URL(req.url)
-    const task = (ctx.params.task || '').toLowerCase() as Task
+    const { task: rawTask } = await params
+    const task = (rawTask || '').toLowerCase() as Task
     const mode = (url.searchParams.get('mode') || '').toLowerCase()
 
     if (!['ra', 'rs', 'sgd'].includes(task)) {
@@ -253,7 +261,7 @@ export async function GET(req: Request, ctx: { params: { task: string } }) {
         if (hit) {
           dict[t] = { audio: hit.audio, freq: hit.freq }
           i++
-          if (i >= 1000) break // ← 上限从 200 提到 1000
+          if (i >= 1000) break // 上限 1000
         }
       }
     }
