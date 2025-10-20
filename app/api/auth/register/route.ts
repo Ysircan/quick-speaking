@@ -1,51 +1,68 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import { hashPassword, normEmail, signJwt } from "@/lib/auth";
 
+// POST /api/auth/register
+// body: { name, email, password, code }
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, password, role = "PARTICIPANT" } = await req.json();
+    const { name, email: rawEmail, password, code } = await req.json();
 
-    if (!name || !email || !password) {
-      return NextResponse.json({ success: false, error: "Missing required fields." }, { status: 400 });
+    // 基本校验
+    if (!name || !rawEmail || !password || !code) {
+      return NextResponse.json({ ok: false, message: "Missing required fields." }, { status: 400 });
     }
 
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
-      return NextResponse.json({ success: false, error: "Email is already registered." }, { status: 400 });
+    const email = normEmail(rawEmail);
+
+    // 验证码校验（SIGNUP、未过期、未使用、最新一条）
+    const v = await prisma.emailVerification.findFirst({
+      where: { email, purpose: "SIGNUP", usedAt: null, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: "desc" },
+    });
+    if (!v || v.code !== code) {
+      return NextResponse.json({ ok: false, message: "Invalid or expired code." }, { status: 400 });
     }
 
-    const hashed = await bcrypt.hash(password, 10);
+    // 唯一邮箱
+    const existed = await prisma.user.findUnique({ where: { email } });
+    if (existed) {
+      return NextResponse.json({ ok: false, message: "Email is already registered." }, { status: 409 });
+    }
 
+    // 创建用户（注意字段名：passwordHash、emailVerifiedAt）
+    const passwordHash = await hashPassword(password);
     const user = await prisma.user.create({
       data: {
         name,
         email,
-        password: hashed,
-        role,
-        avatarUrl: "https://cdn.quick.com/default-avatar.png"
-      }
+        passwordHash,
+        emailVerifiedAt: new Date(),
+        // 其余字段按默认值：avatarUrl、isSystemAccount=false、createdAt/updatedAt
+      },
     });
 
-    const token = jwt.sign(
-      { userId: user.id, role: user.role },
-      process.env.JWT_SECRET!,
-      { expiresIn: "7d" }
-    );
+    // 标记验证码已使用
+    await prisma.emailVerification.update({
+      where: { id: v.id },
+      data: { usedAt: new Date() },
+    });
+
+    // 签发 JWT（字段与我们 lib/auth.ts 保持一致）
+    const token = signJwt({
+      uid: user.id,
+      admin: user.isSystemAccount,
+      ver: true,
+      pwdv: user.passwordChangedAt ? new Date(user.passwordChangedAt).getTime() : null,
+    });
 
     return NextResponse.json({
-      success: true,
+      ok: true,
       token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatarUrl: user.avatarUrl
-      }
+      user: { id: user.id, name: user.name, email: user.email },
     });
   } catch (err) {
-    return NextResponse.json({ success: false, error: "Internal server error." }, { status: 500 });
+    console.error("REGISTER_ERROR:", err);
+    return NextResponse.json({ ok: false, message: "Internal server error." }, { status: 500 });
   }
 }

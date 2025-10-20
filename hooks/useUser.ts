@@ -1,4 +1,3 @@
-// /hooks/useUser.ts
 "use client";
 
 import { useEffect, useState } from "react";
@@ -7,11 +6,9 @@ type User = {
   id: string;
   name: string;
   email: string;
-  role: "CREATOR" | "PARTICIPANT";
-  points: number;
   avatarUrl: string | null;
-  currentStreakDays: number;
   createdAt: string;
+  isSystemAccount: boolean; // ← 是否后台管理员（可看统计）
 };
 
 export default function useUser() {
@@ -20,7 +17,7 @@ export default function useUser() {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const token = localStorage.getItem("token"); // ✅ 取出你登录后保存的 token
+      const token = localStorage.getItem("token");
       if (!token) {
         setUser(null);
         setLoading(false);
@@ -30,17 +27,17 @@ export default function useUser() {
       try {
         const res = await fetch("/api/auth/me", {
           headers: {
-            Authorization: `Bearer ${token}`, // ✅ 加上 token 请求头
+            Authorization: `Bearer ${token}`,
           },
         });
 
-        if (!res.ok) {
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
           setUser(null);
         } else {
-          const data = await res.json();
           setUser(data.user);
         }
-      } catch (err) {
+      } catch {
         setUser(null);
       } finally {
         setLoading(false);

@@ -1,15 +1,17 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import EmailInput from './EmailInput'
 import PasswordInput from './PasswordInput'
 import SubmitButton from './SubmitButton'
 
-export default function LoginForm() {
+export default function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
   const handleLogin = async () => {
     setLoading(true)
@@ -24,21 +26,17 @@ export default function LoginForm() {
 
       const data = await res.json()
 
-      if (!res.ok) {
-        setError(data.error || 'Login failed')
+      if (!res.ok || !data?.ok) {
+        setError(data?.message || data?.error || 'Login failed')
         return
       }
 
       // 保存 token
       localStorage.setItem('token', data.token)
 
-      // 身份判断后跳转
-      const role = data.user?.role
-      if (role === 'CREATOR') {
-        window.location.href = '/creator/dashboard'
-      } else {
-        window.location.href = '/store'
-      }
+      // 成功：优先走父组件回调，否则兜底跳 /store
+      if (onSuccess) onSuccess()
+      else router.push('/store')
     } catch (err) {
       console.error('Login error:', err)
       setError('Something went wrong')

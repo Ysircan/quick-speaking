@@ -14,6 +14,7 @@ export default function useAuth(redirectTo: string = "/auth/login") {
   const router = useRouter();
 
   useEffect(() => {
+    // 等待 useUser 加载完，如果没有登录用户 → 跳转登录页
     if (!loading && !user) {
       router.push(redirectTo);
     }
