@@ -1,269 +1,169 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import type {
+  Mode,
+  Bucket,
+  SortKey,
+  SearchResp,
+  WordItem,
+  SentenceItem,
+  NextCursor,
+} from '../lib/types'
+import { searchSpeaking } from '../lib/api'
+import { useFavorites } from '../hooks/useFavorites'
+import { useAudioPlayer } from '../hooks/useAudioPlayer'
+import { Toolbar } from '../components/Toolbar'
+import { ResultList } from '../components/ResultList'
+import { Pagination } from '../components/Pagination'
 
-type Item = { id: string; word: string; audio: string; freq: number }
-type Bucket = 'all' | 'high' | 'med' | 'low'
-type SortKey = 'freq' | 'alpha'
-
-const LS_FAV_KEY = 'speaking_ra_favs_v1'
+const TASK: 'ra' = 'ra'
 
 export default function RAPage() {
-  // 查询条件
-  const [q, setQ] = useState<string>('')
+  // —— 查询状态 —— //
+  const [mode, setMode] = useState<Mode>('sentence') // 默认句子模式
+  const [q, setQ] = useState('')
   const [bucket, setBucket] = useState<Bucket>('all')
   const [sort, setSort] = useState<SortKey>('freq')
-  const [onlyFavs, setOnlyFavs] = useState<boolean>(false)
+  const [onlyFavs, setOnlyFavs] = useState(false)
 
-  // 结果与分页
-  const [items, setItems] = useState<Item[]>([])
-  const [nextCursor, setNextCursor] = useState<string | null>(null)
-  const [total, setTotal] = useState<number>(0)
-  const [loading, setLoading] = useState<boolean>(false)
+  // —— 数据状态 —— //
+  const [items, setItems] = useState<(WordItem | SentenceItem)[]>([])
+  const [dict, setDict] = useState<Record<string, { audio?: string; freq: number }> | undefined>(undefined)
+  const [nextCursor, setNextCursor] = useState<NextCursor>(null)
+  const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // 收藏
-  const [favs, setFavs] = useState<Set<string>>(new Set())
+  // —— 收藏 & 音频 —— //
+  const { favs, toggle: toggleFav, has: isFav } = useFavorites(TASK, mode) // 根据模式分别存收藏
+  const { currentId, isPlaying, playItem } = useAudioPlayer()
 
-  // 播放器
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-  const [currentId, setCurrentId] = useState<string | null>(null)
-  const [isPlaying, setIsPlaying] = useState<boolean>(false)
+  // 句子模式：可不强制最小搜索字数；单词模式：最少 2 个字符（你可以按需调整）
+  const canSearch = mode === 'word' ? q.trim().length >= 2 || onlyFavs : true
 
-  // 初始化收藏
+  // 当查询条件变化时重置并搜索
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(LS_FAV_KEY)
-      if (raw) setFavs(new Set(JSON.parse(raw)))
-    } catch {
-      // ignore
-    }
-  }, [])
+    resetAndLoad()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, q, bucket, sort, onlyFavs])
 
-  const persistFavs = (s: Set<string>) => {
-    setFavs(new Set(s))
-    try {
-      localStorage.setItem(LS_FAV_KEY, JSON.stringify(Array.from(s)))
-    } catch {
-      // ignore
-    }
-  }
-
-  // 是否可以触发搜索（避免一次渲染 3000+）
-  const canSearch = q.trim().length >= 2 || onlyFavs
-
-  // 条件变化时重置并拉取第一页
-  useEffect(() => {
+  async function resetAndLoad() {
     setItems([])
+    setDict(undefined)
     setNextCursor(null)
     setTotal(0)
     setError(null)
-
     if (!canSearch) return
-    void fetchPage(true)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, bucket, sort, onlyFavs])
+    await load(true)
+  }
 
-  async function fetchPage(reset: boolean) {
+  function applyWordClientFilters(list: WordItem[]): WordItem[] {
+    // 频率分桶（仅 word 模式）
+    let out = list
+    if (mode === 'word') {
+      out = out.filter((it) => {
+        const f = it.freq ?? 0
+        if (bucket === 'low') return f < 5
+        if (bucket === 'med') return f >= 5 && f <= 10
+        if (bucket === 'high') return f > 10
+        return true
+      })
+      if (onlyFavs) out = out.filter((it) => favs.has(it.id))
+      // 本地排序（后端已按 freq/alpha，大多数情况下不需要，但保留以兼容你原逻辑）
+      if (sort === 'alpha') out = out.slice().sort((a, b) => a.word.localeCompare(b.word))
+      else out = out.slice().sort((a, b) => (b.freq ?? 0) - (a.freq ?? 0))
+    }
+    return out
+  }
+
+  async function load(reset: boolean) {
     if (loading) return
     setLoading(true)
     try {
-      const params = new URLSearchParams()
-      if (q.trim().length >= 2) params.set('q', q.trim())
-      params.set('bucket', bucket)
-      params.set('sort', sort)
-      params.set('limit', '20')
-      if (!reset && nextCursor) params.set('cursor', nextCursor)
+      const nextPage = reset ? 1 : (nextCursor?.page ?? 1)
+      const pageSize = mode === 'word' ? 30 : 10
 
-      const res = await fetch(`/api/speaking/ra/search?${params.toString()}`)
-      if (!res.ok) throw new Error('bad response')
-      const data = (await res.json()) as {
-        items: Item[]
-        nextCursor: string | null
-        totalMatched: number
+      const resp: SearchResp = await searchSpeaking(TASK, mode, {
+        q: q.trim() || undefined,
+        page: nextPage,
+        pageSize,
+        // 句子模式返回 tokens & 本页 dict，单词模式忽略
+        tokens: mode === 'sentence',
+        withDict: mode === 'sentence',
+        // 排序（单词模式有意义；句子默认 lesson/order）
+        sort: mode === 'word' ? sort : undefined,
+      })
+
+      let pageItems = resp.items
+      if (mode === 'word') {
+        pageItems = applyWordClientFilters(resp.items as WordItem[])
       }
 
-      // 只看收藏：前端对本页做一次过滤（MVP）
-      const page = onlyFavs ? data.items.filter((it) => favs.has(it.id)) : data.items
-
-      setItems((prev) => (reset ? page : prev.concat(page)))
-      setNextCursor(data.nextCursor)
-      setTotal(onlyFavs ? page.length : data.totalMatched)
+      setItems((prev) => (reset ? pageItems : prev.concat(pageItems)))
+      setTotal(
+        mode === 'word' && onlyFavs ? (pageItems as WordItem[]).length : resp.total
+      )
+      setNextCursor(resp.nextCursor)
+      // 句子模式：记住随页词典，供点击 token 播放
+      if (resp.mode === 'sentence' && resp.dict) setDict(resp.dict)
       setError(null)
-    } catch {
+    } catch (e) {
       setError('Load failed. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
-  function toggleFav(id: string) {
-    const s = new Set(favs)
-    if (s.has(id)) s.delete(id)
-    else s.add(id)
-    persistFavs(s)
-  }
-
-  function ensureAudio() {
-    if (!audioRef.current) {
-      audioRef.current = new Audio()
-      audioRef.current.onended = () => setIsPlaying(false)
-      audioRef.current.onerror = () => {
-        setIsPlaying(false)
-        alert('Audio missing or failed to load.')
-      }
-    }
-    return audioRef.current
-  }
-
-  function onPlayClick(item: Item) {
-    const audio = ensureAudio()
-
-    // 同一条：切换播放/暂停
-    if (currentId === item.id) {
-      if (isPlaying) {
-        audio.pause()
-        setIsPlaying(false)
-      } else {
-        void audio.play().then(() => setIsPlaying(true))
-      }
-      return
-    }
-
-    // 切换到新音频
-    audio.pause()
-    audio.src = item.audio
-    audio.currentTime = 0
-    void audio.play()
-      .then(() => {
-        setCurrentId(item.id)
-        setIsPlaying(true)
-      })
-      .catch(() => {
-        setCurrentId(item.id)
-        setIsPlaying(false)
-      })
-  }
-
+  // —— 渲染 —— //
   return (
     <div className="min-h-screen px-4 py-6 text-white bg-[#0b0b0b]">
       <h1 className="text-2xl font-semibold mb-4">Read Aloud (RA)</h1>
 
-      {/* 工具条 */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Type at least 2 letters to search…"
-          className="px-3 py-2 rounded-lg bg-[#151515] border border-[#2a2a2a] outline-none w-72"
-        />
+      <Toolbar
+        mode={mode} onMode={setMode}
+        q={q} onQ={setQ}
+        bucket={bucket} onBucket={setBucket}
+        sort={sort} onSort={setSort}
+        onlyFavs={onlyFavs} onOnlyFavs={setOnlyFavs}
+      />
 
-        <div className="flex items-center gap-2">
-          {(['all', 'high', 'med', 'low'] as const).map((bk) => (
-            <button
-              key={bk}
-              onClick={() => setBucket(bk)}
-              className={`px-3 py-2 rounded-lg border ${
-                bucket === bk ? 'bg-[#1f1f1f] border-[#3a3a3a]' : 'bg-[#121212] border-[#2a2a2a]'
-              }`}
-              title={
-                bk === 'all'
-                  ? 'All'
-                  : bk === 'high'
-                  ? 'High freq (≥150)'
-                  : bk === 'med'
-                  ? 'Medium (60–149)'
-                  : 'Low (<60)'
-              }
-            >
-              {bk.toUpperCase()}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <label className="text-sm opacity-80">Sort</label>
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
-            className="px-2 py-2 rounded-lg bg-[#151515] border border-[#2a2a2a]"
-          >
-            <option value="freq">By Frequency</option>
-            <option value="alpha">A → Z</option>
-          </select>
-        </div>
-
-        <label className="flex items-center gap-2 ml-auto text-sm">
-          <input
-            type="checkbox"
-            checked={onlyFavs}
-            onChange={(e) => setOnlyFavs(e.target.checked)}
-          />
-          Only Favorites
-        </label>
-      </div>
-
-      {/* 提示 */}
-      {!canSearch && (
+      {!canSearch && mode === 'word' && (
         <p className="text-sm text-gray-400 mb-4">
-          Enter at least 2 characters to search. Nothing is loaded by default.
+          Enter at least 2 characters to search words. Nothing is loaded by default.
         </p>
       )}
 
-      {/* 结果区 */}
       {canSearch && (
         <>
           <div className="text-xs text-gray-400 mb-2">
-            {error ? <span className="text-red-400">{error}</span> : <>Matched: <span className="text-gray-200">{total}</span></>}
-          </div>
-
-          <ul className="divide-y divide-[#1e1e1e] rounded-lg overflow-hidden bg-[#0f0f0f] border border-[#1b1b1b]">
-            {items.map((it) => {
-              const active = currentId === it.id
-              const playingIcon = active ? (isPlaying ? '⏸' : '▶') : '▶'
-              return (
-                <li key={`${it.id}-${it.audio}`} className="flex items-center gap-3 px-3 py-2">
-                  <button
-                    onClick={() => onPlayClick(it)}
-                    className={`w-8 h-8 rounded-full text-sm flex items-center justify-center border ${
-                      active ? 'border-[#55f] bg-[#141633]' : 'border-[#2a2a2a] bg-[#161616]'
-                    }`}
-                    title={active ? (isPlaying ? 'Pause' : 'Play') : 'Play'}
-                  >
-                    {playingIcon}
-                  </button>
-
-                  <div className="flex-1">
-                    <div className="text-sm">{it.word}</div>
-                    <div className="text-[11px] opacity-60">freq: {it.freq}</div>
-                  </div>
-
-                  <button
-                    onClick={() => toggleFav(it.id)}
-                    className="px-2 py-1 text-lg"
-                    title={favs.has(it.id) ? 'Unfavorite' : 'Favorite'}
-                  >
-                    {favs.has(it.id) ? '★' : '☆'}
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
-
-          <div className="mt-4 flex items-center gap-3">
-            {nextCursor !== null && (
-              <button
-                onClick={() => fetchPage(false)}
-                disabled={loading}
-                className="px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a]"
-              >
-                {loading ? 'Loading…' : 'Load more'}
-              </button>
-            )}
-            {nextCursor === null && items.length > 0 && (
-              <span className="text-xs text-gray-500">No more results.</span>
+            {error ? (
+              <span className="text-red-400">{error}</span>
+            ) : (
+              <>
+                Matched:{' '}
+                <span className="text-gray-200">{total}</span>
+              </>
             )}
           </div>
+
+          <ResultList
+            mode={mode}
+            items={items}
+            dict={dict}
+            currentId={currentId}
+            isPlaying={isPlaying}
+            onPlay={(audio, id) => playItem(id ?? 'adhoc', audio)}
+            isFav={(id) => isFav(id)}
+            toggleFav={(id) => toggleFav(id)}
+          />
+
+          <Pagination
+            mode={mode}
+            hasMore={!!nextCursor}
+            loading={loading}
+            onMore={() => load(false)}
+          />
         </>
       )}
     </div>

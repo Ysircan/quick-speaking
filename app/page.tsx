@@ -18,7 +18,7 @@ export default function HomePage() {
       <section className="relative z-10 flex flex-col items-center text-center mt-24 px-4">
         <h1 className="text-5xl font-bold mb-4">Quick</h1>
         <p className="text-sm text-gray-300 mb-2">
-          🚀 Your AI-powered teaching assistant – instantly generate learning tasks and engage students with gamified progression.
+           Your AI-powered teaching assistant – instantly generate learning tasks and engage students with gamified progression.
         </p>
         <p className="text-sm text-gray-400 mb-6">
           "I turn lessons into quests. You’re not just a teacher — you’re the guide of an adventure."
@@ -35,17 +35,17 @@ export default function HomePage() {
       <section className="relative z-10 mt-20 px-4 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-5xl mx-auto">
         {[
           {
-            icon: '🎓',
+            
             title: 'AI Question Generator',
             desc: 'Upload content or enter a topic — get tailored questions instantly.',
           },
           {
-            icon: '🔁',
+            
             title: 'Task-Driven Learning',
             desc: 'Teachers assign daily tasks; students complete them one by one.',
           },
           {
-            icon: '📈',
+            
             title: 'Card-Based Progression',
             desc: 'Earn digital cards through learning and collect your growth journey.',
           },
@@ -54,7 +54,7 @@ export default function HomePage() {
             key={item.title}
             className="bg-zinc-900 rounded-xl p-6 text-center border border-zinc-800"
           >
-            <div className="text-2xl mb-2">{item.icon}</div>
+           
             <h3 className="font-bold text-lg">{item.title}</h3>
             <p className="text-sm text-gray-400 mt-1">{item.desc}</p>
           </div>
@@ -65,16 +65,16 @@ export default function HomePage() {
       <section className="relative z-10 mt-24 text-center px-6">
         <h2 className="text-xl font-bold mb-6">How Quick Works</h2>
         <div className="flex flex-wrap justify-center items-center text-sm gap-4">
-          <div className="bg-zinc-800 px-4 py-2 rounded-full">👩‍🏫 Upload Teaching Material</div>
+          <div className="bg-zinc-800 px-4 py-2 rounded-full"> Upload Teaching Material</div>
           <span>→</span>
-          <div className="bg-zinc-800 px-4 py-2 rounded-full">🧠 AI Generates Questions</div>
+          <div className="bg-zinc-800 px-4 py-2 rounded-full"> AI Generates Questions</div>
           <span>→</span>
-          <div className="bg-zinc-800 px-4 py-2 rounded-full">🧑‍🎓 Students Receive Tasks</div>
+          <div className="bg-zinc-800 px-4 py-2 rounded-full"> Students Receive Tasks</div>
           <span>→</span>
-          <div className="bg-zinc-800 px-4 py-2 rounded-full">🎁 Earn Cards & Feedback</div>
+          <div className="bg-zinc-800 px-4 py-2 rounded-full"> Earn Cards & Feedback</div>
         </div>
         <p className="text-xs text-gray-500 mt-4">
-          ✅ 12+ creators are already using Quick to transform their teaching.
+          12+ students are already using Quick to transform their teaching.
         </p>
       </section>
 
